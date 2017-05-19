@@ -39,6 +39,8 @@ var GamePlayScene = function(game, stage)
   var year = day*365;
 
   var block_n = 2000;
+  var loading_latest = false;
+  var enhancing = false;
 
   var limitGraph = function()
   {
@@ -131,6 +133,7 @@ var GamePlayScene = function(game, stage)
     {
       var self = this;
       self.shift = false;
+      self.alt = false;
       self.key_down = function(evt)
       {
         var delta;
@@ -138,6 +141,25 @@ var GamePlayScene = function(game, stage)
         {
           case 16: //shift
             self.shift = true;
+          break;
+          case 18: //alt
+            self.alt = true;
+            var index = my_graph.findibeforex(my_graph.disp_min_xv);
+            var lowest = my_graph.yv[index];
+            var highest = my_graph.yv[index];
+            var val;
+            for(var i = 0; i < my_graph.w; i++)
+            {
+              val = my_graph.nextqueryxt(i/my_graph.w,index);
+              if(val < lowest)  lowest  = val;
+              if(val > highest) highest = val;
+            }
+            delta = highest-lowest;
+            lowest  -= delta*0.1;
+            highest += delta*0.1;
+            my_graph.disp_min_yv = lowest;
+            my_graph.disp_max_yv = highest;
+            limitGraph();
           break;
           case 37: //left
             delta = my_graph.disp_max_xv-my_graph.disp_min_xv;
@@ -153,7 +175,22 @@ var GamePlayScene = function(game, stage)
           break;
         }
       };
-      self.key_up   = function(evt){ if(evt.keyCode == 16) self.shift = false; };
+      self.key_up = function(evt)
+      {
+        switch(evt.keyCode)
+        {
+          case 16:
+            self.shift = false;
+          break;
+          case 18:
+            self.alt = false;
+            my_graph.clampDispY();
+            my_graph.disp_min_yv = 0;
+            my_graph.disp_max_yv *= 1.1;
+            limitGraph();
+          break;
+        }
+      };
     }
 
     my_graph = new variable_graph();
@@ -218,22 +255,23 @@ var GamePlayScene = function(game, stage)
     x += w+s;
     month_btn = new ButtonBox(x,y,w,h,function(){ my_graph.disp_min_xv = my_graph.disp_max_xv-month; limitGraph(); });
     x += w+s*3;
-    load_latest_btn = new ButtonBox(x,y,w,h,function(){ getDataBlock(BLOCK_MINUTE,block_n,noop); });
+    load_latest_btn = new ButtonBox(x,y,w,h,function()
+    {
+      if(loading_latest) return;
+      loading_latest = true;
+      getDataBlock(BLOCK_MINUTE,block_n,function(){loading_latest = false;});
+    });
     x += w+s;
     enhance_btn = new ButtonBox(x,y,w,h,function()
     {
+      if(enhancing) return;
+      enhancing = true;
       var from = floor(my_graph.disp_min_xv);
       var to   = floor(my_graph.disp_max_xv);
       var n = 100;
-      var callback = function()
-      {
-        my_graph.clampDisp();
-        my_graph.disp_min_yv = 0;
-        my_graph.disp_max_yv *= 1.1;
-        limitGraph();
-      }
       for(var i = 0; i < n; i++)
         getDataPt(floor(lerp(from,to,i/n)),noop);
+      getDataPt(floor(to),function(){enhancing = false;});
     });
 
     var callback = function()
@@ -359,8 +397,8 @@ var GamePlayScene = function(game, stage)
     drawbtntitle(day_btn,"day");
     drawbtntitle(week_btn,"week");
     drawbtntitle(month_btn,"month");
-    drawbtntitle(load_latest_btn,"latest");
-    drawbtntitle(enhance_btn,"enhance");
+    if(!loading_latest) drawbtntitle(load_latest_btn,"latest");
+    if(!enhancing)      drawbtntitle(enhance_btn,"enhance");
 
     my_graph.draw(ctx);
 

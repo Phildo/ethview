@@ -767,7 +767,7 @@ var variable_graph = function()
 
   self.clampDispY = function()
   {
-    self.dirty= true;
+    self.dirty = true;
     if(self.known_min_yv == self.known_max_yv)
     {
       self.disp_min_yv = self.known_min_yv-1;
