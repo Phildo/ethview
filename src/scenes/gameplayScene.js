@@ -259,7 +259,17 @@ var GamePlayScene = function(game, stage)
     {
       if(loading_latest) return;
       loading_latest = true;
-      getDataBlock(BLOCK_MINUTE,block_n,function(){loading_latest = false;});
+      delta = my_graph.disp_max_xv-my_graph.disp_min_xv;
+      my_graph.disp_max_xv = my_graph.xv[my_graph.xv.length-1];
+      my_graph.disp_min_xv = my_graph.disp_max_xv - delta;
+      my_graph.dirty = true;
+      getDataBlock(BLOCK_MINUTE,block_n,function()
+      {
+        delta = my_graph.disp_max_xv-my_graph.disp_min_xv;
+        my_graph.disp_max_xv = my_graph.xv[my_graph.xv.length-1];
+        my_graph.disp_min_xv = my_graph.disp_max_xv - delta;
+        loading_latest = false;
+      });
     });
     x += w+s;
     enhance_btn = new ButtonBox(x,y,w,h,function()
@@ -277,6 +287,7 @@ var GamePlayScene = function(game, stage)
     var callback = function()
     {
       my_graph.clampDisp();
+      my_graph.disp_min_xv = my_graph.disp_max_xv-day;
       my_graph.disp_min_yv = 0;
       my_graph.disp_max_yv *= 1.1;
       limitGraph();
