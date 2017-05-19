@@ -801,65 +801,63 @@ var variable_graph = function()
     return true;
   }
 
-  self.insertDataNext = function(x,y,i,expand)
+  self.insertDataNext = function(x,y,i)
   {
     self.dirty = true;
-    if(expand)
-    {
-      if(x < self.disp_min_xv) self.disp_min_xv = x;
-      if(x > self.disp_max_xv) self.disp_max_xv = x;
-      if(y < self.disp_min_yv) self.disp_min_yv = y;
-      if(y > self.disp_max_yv) self.disp_max_yv = y;
-    }
 
     if(!self.yv.length || y < self.known_min_yv) self.known_min_yv = y;
     if(!self.yv.length || y > self.known_max_yv) self.known_max_yv = y;
 
     i = self.nextibeforex(x,i)+1;
-    self.xv.splice(i,0,x);
-    self.yv.splice(i,0,y);
+    if(self.xv[i] == x)
+      self.yv[i] = y;
+    else
+    {
+      self.xv.splice(i,0,x);
+      self.yv.splice(i,0,y);
+    }
     return i;
   }
 
-  self.insertDataFind = function(x,y,min,max,expand)
+  self.insertDataFind = function(x,y,min,max)
   {
     var i = self.findibeforex(x,min,max);
-    return self.insertDataNext(x,y,i,expand);
+    return self.insertDataNext(x,y,i);
   }
 
-  self.insertDataBlockNext = function(x,y,i,expand)
+  self.insertDataBlockNext = function(x,y,i)
   {
     self.dirty = true;
-    if(x.length && expand)
+    if(x.length)
     {
-      if(x[0] < self.disp_min_xv) self.disp_min_xv = x[0];
-      if(x[x.length-1] > self.disp_max_xv) self.disp_max_xv = x[x.length-1];
       if(!self.yv.length) self.known_min_yv = y[0];
       if(!self.yv.length) self.known_max_yv = y[0];
     }
     for(var j = 0; j < x.length; j++)
     {
-      if(expand)
-      {
-        if(y[j] < self.disp_min_yv) self.disp_min_yv = y[j];
-        if(y[j] > self.disp_max_yv) self.disp_max_yv = y[j];
-      }
-
       if(y[j] < self.known_min_yv) self.known_min_yv = y[j];
       if(y[j] > self.known_max_yv) self.known_max_yv = y[j];
 
       i = self.nextibeforex(x[j],i)+1;
       self.xv.splice(i,0,x[j]);
       self.yv.splice(i,0,y[j]);
+
+      if(self.xv[i] == x[j])
+        self.yv[i] = y[j];
+      else
+      {
+        self.xv.splice(i,0,x[j]);
+        self.yv.splice(i,0,y[j]);
+      }
     }
 
     return i;
   }
 
-  self.insertDataBlockFind = function(x,y,min,max,expand)
+  self.insertDataBlockFind = function(x,y,min,max)
   {
     var i = self.findibeforex(x,min,max);
-    return self.insertDataBlockNext(x,y,i,expand);
+    return self.insertDataBlockNext(x,y,i);
   }
 
   self.findqueryxt = function(xt,min,max)

@@ -12,7 +12,15 @@ var GamePlayScene = function(game, stage)
 
   var hoverer;
   var dragger;
+  var clicker;
   var keyer;
+
+  var hr_btn;
+  var day_btn;
+  var week_btn;
+  var month_btn;
+  var load_latest_btn;
+  var enhance_btn;
 
   var keys;
 
@@ -30,6 +38,8 @@ var GamePlayScene = function(game, stage)
   var month = day*30;
   var year = day*365;
 
+  var block_n = 2000;
+
   var limitGraph = function()
   {
     if(my_graph.disp_max_xv > my_graph.xv[my_graph.xv.length-1])
@@ -42,7 +52,7 @@ var GamePlayScene = function(game, stage)
     my_graph.dirty = true;
   }
 
-  var getDataPt = function(ts)
+  var getDataPt = function(ts,callback)
   {
     var from = "ETH";
     var to = "USD";
@@ -56,11 +66,8 @@ var GamePlayScene = function(game, stage)
           var r = JSON.parse(xhr.responseText);
           if(r && r[from] && r[from][to])
           {
-            my_graph.insertDataNext(ts,r[from][to],0,1);
-            my_graph.clampDisp();
-            my_graph.disp_min_yv = 0;
-            my_graph.disp_max_yv *= 1.1;
-            limitGraph();
+            my_graph.insertDataNext(ts,r[from][to],0);
+            callback();
           }
         }
       }
@@ -73,7 +80,7 @@ var GamePlayScene = function(game, stage)
   var BLOCK_DAY    = ENUM; ENUM++;
   var BLOCK_MINUTE = ENUM; ENUM++;
   var BLOCK_HOUR   = ENUM; ENUM++;
-  var getDataBlock = function(block,n)
+  var getDataBlock = function(block,n,callback)
   {
     var span = "day";
     switch(block)
@@ -103,11 +110,8 @@ var GamePlayScene = function(game, stage)
               x[i] = r.Data[i].time;
               y[i] = r.Data[i].close;
             }
-            my_graph.insertDataBlockNext(x,y,0,1);
-            my_graph.clampDisp();
-            my_graph.disp_min_yv = 0;
-            my_graph.disp_max_yv *= 1.1;
-            limitGraph();
+            my_graph.insertDataBlockNext(x,y,0);
+            callback();
           }
         }
       }
@@ -120,6 +124,7 @@ var GamePlayScene = function(game, stage)
   {
     hoverer = new PersistentHoverer({source:stage.dispCanv.canvas});
     dragger = new Dragger({source:stage.dispCanv.canvas});
+    clicker = new Clicker({source:stage.dispCanv.canvas});
     keyer = new Keyer({source:stage.dispCanv.canvas});
 
     keys = new function()
@@ -200,13 +205,47 @@ var GamePlayScene = function(game, stage)
 
     }
 
-    var d = Math.floor(Date.now()/1000);
-    var n = 2000;
-    //for(var i = 0; i < n; i++)
-      //getDataPt(d-i*hr);
-    getDataBlock(BLOCK_MINUTE,n);
-    getDataBlock(BLOCK_HOUR,n);
-    getDataBlock(BLOCK_DAY,n);
+    var x = my_graph.x+140;
+    var y = my_graph.y-30;
+    var h = 20;
+    var w = 50;
+    var s = 10;
+    hr_btn    = new ButtonBox(x,y,w,h,function(){ my_graph.disp_min_xv = my_graph.disp_max_xv-hr; limitGraph(); });
+    x += w+s;
+    day_btn   = new ButtonBox(x,y,w,h,function(){ my_graph.disp_min_xv = my_graph.disp_max_xv-day; limitGraph(); });
+    x += w+s;
+    week_btn  = new ButtonBox(x,y,w,h,function(){ my_graph.disp_min_xv = my_graph.disp_max_xv-week; limitGraph(); });
+    x += w+s;
+    month_btn = new ButtonBox(x,y,w,h,function(){ my_graph.disp_min_xv = my_graph.disp_max_xv-month; limitGraph(); });
+    x += w+s*3;
+    load_latest_btn = new ButtonBox(x,y,w,h,function(){ getDataBlock(BLOCK_MINUTE,block_n,noop); });
+    x += w+s;
+    enhance_btn = new ButtonBox(x,y,w,h,function()
+    {
+      var from = floor(my_graph.disp_min_xv);
+      var to   = floor(my_graph.disp_max_xv);
+      var n = 100;
+      var callback = function()
+      {
+        my_graph.clampDisp();
+        my_graph.disp_min_yv = 0;
+        my_graph.disp_max_yv *= 1.1;
+        limitGraph();
+      }
+      for(var i = 0; i < n; i++)
+        getDataPt(floor(lerp(from,to,i/n)),noop);
+    });
+
+    var callback = function()
+    {
+      my_graph.clampDisp();
+      my_graph.disp_min_yv = 0;
+      my_graph.disp_max_yv *= 1.1;
+      limitGraph();
+    }
+    getDataBlock(BLOCK_MINUTE,block_n,callback);
+    getDataBlock(BLOCK_HOUR,block_n,callback);
+    getDataBlock(BLOCK_DAY,block_n,callback);
   };
 
   self.tick = function()
@@ -215,6 +254,13 @@ var GamePlayScene = function(game, stage)
     hoverer.flush();
     dragger.filter(my_graph);
     dragger.flush();
+    clicker.filter(hr_btn);
+    clicker.filter(day_btn);
+    clicker.filter(week_btn);
+    clicker.filter(month_btn);
+    clicker.filter(load_latest_btn);
+    clicker.filter(enhance_btn);
+    clicker.flush();
     keyer.filter(keys);
     keyer.flush();
   };
@@ -307,9 +353,23 @@ var GamePlayScene = function(game, stage)
       }
     }
 
+    ctx.fillStyle = "#000000";
+    ctx.strokeStyle = "#000000";
+    drawbtntitle(hr_btn,"hr");
+    drawbtntitle(day_btn,"day");
+    drawbtntitle(week_btn,"week");
+    drawbtntitle(month_btn,"month");
+    drawbtntitle(load_latest_btn,"latest");
+    drawbtntitle(enhance_btn,"enhance");
+
     my_graph.draw(ctx);
 
   };
+  var drawbtntitle = function(btn,title)
+  {
+    ctx.strokeRect(btn.x,btn.y,btn.w,btn.h);
+    ctx.fillText(title,btn.x+2,btn.y+btn.h-2);
+  }
 
   self.cleanup = function()
   {
