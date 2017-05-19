@@ -9,8 +9,13 @@ var GamePlayScene = function(game, stage)
 
   var appname = "ethview";
   var my_graph;
+
   var hoverer;
   var dragger;
+  var keyer;
+
+  var shift;
+
   var hover_xval;
   var hover_yval;
   var hover_pos;
@@ -24,6 +29,13 @@ var GamePlayScene = function(game, stage)
   var week = day*7;
   var month = day*30;
   var year = day*365;
+
+  var limitGraph = function()
+  {
+    if(my_graph.disp_min_xv > my_graph.disp_max_xv-hr)   my_graph.disp_min_xv = my_graph.disp_max_xv-hr;
+    if(my_graph.disp_min_xv < my_graph.disp_max_xv-year) my_graph.disp_min_xv = my_graph.disp_max_xv-year;
+    if(my_graph.disp_max_xv > my_graph.xv[my_graph.xv.length-1]) my_graph.disp_max_xv = my_graph.xv[my_graph.xv.length-1];
+  }
 
   var getDataPt = function(ts)
   {
@@ -41,6 +53,7 @@ var GamePlayScene = function(game, stage)
           {
             my_graph.insertDataNext(ts,r[from][to],0,1);
             my_graph.clampDisp();
+            limitGraph();
             my_graph.disp_min_yv = 0;
             my_graph.disp_max_yv *= 1.1;
           }
@@ -87,6 +100,7 @@ var GamePlayScene = function(game, stage)
             }
             my_graph.insertDataBlockNext(x,y,0,1);
             my_graph.clampDisp();
+            limitGraph();
             my_graph.disp_min_yv = 0;
             my_graph.disp_max_yv *= 1.1;
           }
@@ -101,6 +115,15 @@ var GamePlayScene = function(game, stage)
   {
     hoverer = new PersistentHoverer({source:stage.dispCanv.canvas});
     dragger = new Dragger({source:stage.dispCanv.canvas});
+    keyer = new Keyer({source:stage.dispCanv.canvas});
+
+    shift = new function()
+    {
+      var self = this;
+      self.down = false;
+      self.key_down = function(evt){ if(evt.keyCode == 16) self.down = true; };
+      self.key_up   = function(evt){ if(evt.keyCode == 16) self.down = false; };
+    }
 
     my_graph = new variable_graph();
     my_graph.wx = 0;
@@ -131,13 +154,20 @@ var GamePlayScene = function(game, stage)
     }
     my_graph.drag = function(evt)
     {
-      var old_xt = mapVal(my_graph.disp_min_xv,my_graph.disp_max_xv,0,1,drag_xval);
       var xt = (evt.doX-my_graph.x)/my_graph.w;
-      if(xt > 1) return;
       var new_drag_xval = mapVal(0,1,my_graph.disp_min_xv,my_graph.disp_max_xv,xt);
-      my_graph.disp_min_xv = mapVal(my_graph.disp_max_xv,new_drag_xval,my_graph.disp_max_xv,drag_xval,my_graph.disp_min_xv);
-      if(my_graph.disp_min_xv > my_graph.disp_max_xv-hr)   my_graph.disp_min_xv = my_graph.disp_max_xv-hr;
-      if(my_graph.disp_min_xv < my_graph.disp_max_xv-year) my_graph.disp_min_xv = my_graph.disp_max_xv-year;
+      if(shift.down)
+      {
+        my_graph.disp_min_xv -= new_drag_xval-drag_xval;
+        my_graph.disp_max_xv -= new_drag_xval-drag_xval;
+      }
+      else
+      {
+        var old_xt = mapVal(my_graph.disp_min_xv,my_graph.disp_max_xv,0,1,drag_xval);
+        if(xt > 1) return;
+        my_graph.disp_min_xv = mapVal(my_graph.disp_max_xv,new_drag_xval,my_graph.disp_max_xv,drag_xval,my_graph.disp_min_xv);
+      }
+      limitGraph();
       my_graph.dirty = true;
     }
     my_graph.dragFinish = function(evt)
@@ -146,7 +176,7 @@ var GamePlayScene = function(game, stage)
     }
 
     var d = Math.floor(Date.now()/1000);
-    var n = 100;
+    var n = 2000;
     //for(var i = 0; i < n; i++)
       //getDataPt(d-i*hr);
     getDataBlock(BLOCK_MINUTE,n);
@@ -160,6 +190,8 @@ var GamePlayScene = function(game, stage)
     hoverer.flush();
     dragger.filter(my_graph);
     dragger.flush();
+    keyer.filter(shift);
+    keyer.flush();
   };
 
   self.draw = function()
@@ -173,13 +205,13 @@ var GamePlayScene = function(game, stage)
     ctx.font = "12px Arial";
     var x;
     var y;
-    ctx.strokeStyle = "#000000";
-    ctx.lineWidth = 0.1;
+    ctx.strokeStyle = "#004488";
+    ctx.lineWidth = 0.5;
     if(hover_xval)
     {
-      ctx.fillText("$"+fdisp(hover_yval), hover_pos.x+20,hover_pos.y);
+      ctx.fillText("$"+fdisp(hover_yval), my_graph.x,my_graph.y-30);
       var date = new Date(floor(hover_xval)*1000);
-      ctx.fillText(dateToString(date),hover_pos.x+20,hover_pos.y+10);
+      ctx.fillText(dateToString(date),my_graph.x,my_graph.y-15);
       y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, hover_yval);
       ctx.beginPath();
       ctx.moveTo(my_graph.x           ,y);
@@ -188,26 +220,28 @@ var GamePlayScene = function(game, stage)
       ctx.lineTo(hover_pos.x,my_graph.y+my_graph.h);
       ctx.stroke();
     }
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 0.1;
     ctx.beginPath();
     //time delim
       //hour
     x = mapVal(my_graph.disp_min_xv,my_graph.disp_max_xv,my_graph.x,my_graph.x+my_graph.w,my_graph.disp_max_xv-hr)
-    ctx.fillText("hr", x+5, my_graph.y+10);
+    ctx.fillText("hr", x+5, my_graph.y-2);
     ctx.moveTo(x,my_graph.y);
     ctx.lineTo(x,my_graph.y+my_graph.h);
       //day
     x = mapVal(my_graph.disp_min_xv,my_graph.disp_max_xv,my_graph.x,my_graph.x+my_graph.w,my_graph.disp_max_xv-day)
-    ctx.fillText("day", x+5, my_graph.y+10);
+    ctx.fillText("day", x+5, my_graph.y-2);
     ctx.moveTo(x,my_graph.y);
     ctx.lineTo(x,my_graph.y+my_graph.h);
       //week
     x = mapVal(my_graph.disp_min_xv,my_graph.disp_max_xv,my_graph.x,my_graph.x+my_graph.w,my_graph.disp_max_xv-week)
-    ctx.fillText("week", x+5, my_graph.y+10);
+    ctx.fillText("week", x+5, my_graph.y-2);
     ctx.moveTo(x,my_graph.y);
     ctx.lineTo(x,my_graph.y+my_graph.h);
       //month
     x = mapVal(my_graph.disp_min_xv,my_graph.disp_max_xv,my_graph.x,my_graph.x+my_graph.w,my_graph.disp_max_xv-month)
-    ctx.fillText("month", x+5, my_graph.y+10);
+    ctx.fillText("month", x+5, my_graph.y-2);
     ctx.moveTo(x,my_graph.y);
     ctx.lineTo(x,my_graph.y+my_graph.h);
     //amt delim
@@ -215,12 +249,34 @@ var GamePlayScene = function(game, stage)
     while(i < my_graph.disp_max_yv)
     {
       y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, i);
-      ctx.fillText("$"+i, my_graph.x+10, y);
+      ctx.fillText("$"+i, my_graph.x+2, y-2);
       ctx.moveTo(my_graph.x           ,y);
       ctx.lineTo(my_graph.x+my_graph.w,y);
       i+=10;
     }
     ctx.stroke();
+
+    ctx.strokeStyle = "#008844";
+    ctx.lineWidth = 0.5;
+    if(purchases)
+    {
+      ctx.beginPath();
+      for(var i = 0; i < purchases.length; i++)
+      {
+        var date = new Date(purchases[i].date);
+        var ts = floor(date)/1000;
+        val = my_graph.findqueryx(ts);
+        x = mapVal(my_graph.disp_min_xv, my_graph.disp_max_xv, my_graph.x, my_graph.x+my_graph.w, ts);
+        y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, val);
+        ctx.fillText("$"+fdisp(val), x+2,y-30);
+        ctx.fillText(dateToString(date),x+2,y-15);
+        ctx.moveTo(my_graph.x           ,y);
+        ctx.lineTo(my_graph.x+my_graph.w,y);
+        ctx.moveTo(x,my_graph.y);
+        ctx.lineTo(x,my_graph.y+my_graph.h);
+      }
+      ctx.stroke();
+    }
   };
 
   self.cleanup = function()
