@@ -9,6 +9,9 @@ var GamePlayScene = function(game, stage)
 
   var appname = "ethview";
   var my_graph;
+  var total_owned_eth;
+  var total_spent_val;
+  var total_owned_val;
 
   var hoverer;
   var dragger;
@@ -134,6 +137,7 @@ var GamePlayScene = function(game, stage)
       var self = this;
       self.shift = false;
       self.alt = false;
+      self.cmd = false;
       self.key_down = function(evt)
       {
         var delta;
@@ -160,6 +164,9 @@ var GamePlayScene = function(game, stage)
             my_graph.disp_min_yv = lowest;
             my_graph.disp_max_yv = highest;
             limitGraph();
+          break;
+          case 91: //cmd
+            self.cmd = true;
           break;
           case 37: //left
             delta = my_graph.disp_max_xv-my_graph.disp_min_xv;
@@ -188,6 +195,9 @@ var GamePlayScene = function(game, stage)
             my_graph.disp_min_yv = 0;
             my_graph.disp_max_yv *= 1.1;
             limitGraph();
+          break;
+          case 91: //cmd
+            self.cmd = false;
           break;
         }
       };
@@ -242,6 +252,10 @@ var GamePlayScene = function(game, stage)
 
     }
 
+    total_owned_eth = 0;
+    total_spent_val = 0;
+    total_owned_val = 0;
+
     var x = my_graph.x+140;
     var y = my_graph.y-30;
     var h = 20;
@@ -290,6 +304,22 @@ var GamePlayScene = function(game, stage)
       my_graph.disp_min_xv = my_graph.disp_max_xv-day;
       my_graph.disp_min_yv = 0;
       my_graph.disp_max_yv *= 1.1;
+
+      if(purchases)
+      {
+        total_owned_eth = 0;
+        total_spent_val = 0;
+        total_owned_val = 0;
+        for(var i = 0; i < purchases.length; i++)
+        {
+          var date = new Date(purchases[i].date);
+          var ts = floor(date)/1000;
+          val = my_graph.findqueryx(ts);
+          total_owned_eth += purchases[i].amt;
+          total_spent_val += purchases[i].amt*val;
+        }
+      }
+      total_owned_val = my_graph.yv[my_graph.yv.length-1]*total_owned_eth;;
       limitGraph();
     }
     getDataBlock(BLOCK_MINUTE,block_n,callback);
@@ -316,9 +346,23 @@ var GamePlayScene = function(game, stage)
 
   self.draw = function()
   {
+    //cur price
     ctx.textAlign = "right";
     ctx.font = "20px Arial";
     ctx.fillText("$"+fdisp(my_graph.yv[my_graph.yv.length-1]), my_graph.x+my_graph.w, my_graph.y-20);
+
+    //owned price
+    if(keys.cmd)
+    {
+      var s = 20;
+      ctx.font = s+"px Arial";
+      ctx.fillText("ETH "+total_owned_eth, my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*3);
+      ctx.fillText("Spent $"+fdisp(total_spent_val), my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*2);
+      ctx.fillText("Have  $"+fdisp(total_owned_val), my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*1);
+      ctx.fillText("delta $"+fdisp(total_owned_val-total_spent_val), my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*0);
+    }
+
+    //hover
     ctx.textAlign = "left";
     ctx.font = "12px Arial";
     var x;
@@ -341,10 +385,11 @@ var GamePlayScene = function(game, stage)
       ctx.lineTo(hover_pos.x,my_graph.y+my_graph.h);
       ctx.stroke();
     }
+
+    //time (x) delim
     ctx.strokeStyle = "#000000";
     ctx.lineWidth = 0.1;
     ctx.beginPath();
-    //time delim
       //hour
     x = mapVal(my_graph.disp_min_xv,my_graph.disp_max_xv,my_graph.x,my_graph.x+my_graph.w,my_graph.disp_max_xv-hr)
     ctx.fillText("hr", x+5, my_graph.y-2);
@@ -365,8 +410,12 @@ var GamePlayScene = function(game, stage)
     ctx.fillText("month", x+5, my_graph.y-2);
     ctx.moveTo(x,my_graph.y);
     ctx.lineTo(x,my_graph.y+my_graph.h);
-    //amt delim
+    ctx.stroke();
+
+    //amt (y) delim
+    /*
     var i = 0;
+    ctx.beginPath();
     while(i < my_graph.disp_max_yv)
     {
       y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, i);
@@ -376,7 +425,25 @@ var GamePlayScene = function(game, stage)
       i+=10;
     }
     ctx.stroke();
+    */
 
+    //window start/end (y) delim
+    ctx.beginPath();
+      //start
+    val = my_graph.findqueryx(my_graph.disp_min_xv);
+    y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, val);
+    ctx.fillText("$"+fdisp(val), my_graph.x+20, y-2);
+    ctx.moveTo(my_graph.x           ,y);
+    ctx.lineTo(my_graph.x+my_graph.w,y);
+      //end
+    val = my_graph.findqueryx(my_graph.disp_max_xv);
+    y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, val);
+    ctx.fillText("$"+fdisp(val), my_graph.x+my_graph.w-100, y-2);
+    ctx.moveTo(my_graph.x           ,y);
+    ctx.lineTo(my_graph.x+my_graph.w,y);
+    ctx.stroke();
+
+    //purchases
     ctx.strokeStyle = "#008844";
     ctx.lineWidth = 0.5;
     if(purchases)
@@ -402,6 +469,7 @@ var GamePlayScene = function(game, stage)
       }
     }
 
+    //buttons
     ctx.fillStyle = "#000000";
     ctx.strokeStyle = "#000000";
     drawbtntitle(hr_btn,"hr");
@@ -412,7 +480,6 @@ var GamePlayScene = function(game, stage)
     if(!enhancing)      drawbtntitle(enhance_btn,"enhance");
 
     my_graph.draw(ctx);
-
   };
   var drawbtntitle = function(btn,title)
   {
