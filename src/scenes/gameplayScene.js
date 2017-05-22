@@ -132,6 +132,15 @@ var GamePlayScene = function(game, stage)
     clicker = new Clicker({source:stage.dispCanv.canvas});
     keyer = new Keyer({source:stage.dispCanv.canvas});
 
+    if(purchases)
+    {
+      for(var i = 0; i < purchases.length; i++)
+      {
+        purchases[i].ts = new Date(purchases[i].date);
+        purchases[i].ts = floor(purchases[i].ts/1000)+2*hr;
+      }
+    }
+
     keys = new function()
     {
       var self = this;
@@ -312,11 +321,8 @@ var GamePlayScene = function(game, stage)
         total_owned_val = 0;
         for(var i = 0; i < purchases.length; i++)
         {
-          var date = new Date(purchases[i].date);
-          var ts = floor(date)/1000;
-          val = my_graph.findqueryx(ts);
           total_owned_eth += purchases[i].amt;
-          total_spent_val += purchases[i].amt*val;
+          total_spent_val += purchases[i].amt*my_graph.findqueryx(purchases[i].ts);
         }
       }
       total_owned_val = my_graph.yv[my_graph.yv.length-1]*total_owned_eth;;
@@ -450,13 +456,11 @@ var GamePlayScene = function(game, stage)
     {
       for(var i = 0; i < purchases.length; i++)
       {
-        var date = new Date(purchases[i].date);
-        var ts = floor(date)/1000;
-        val = my_graph.findqueryx(ts);
-        x = mapVal(my_graph.disp_min_xv, my_graph.disp_max_xv, my_graph.x, my_graph.x+my_graph.w, ts);
+        val = my_graph.findqueryx(purchases[i].ts);
+        x = mapVal(my_graph.disp_min_xv, my_graph.disp_max_xv, my_graph.x, my_graph.x+my_graph.w, purchases[i].ts);
         y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, val);
         ctx.fillText("$"+fdisp(val), x+2,y-30);
-        ctx.fillText(dateToString(date),x+2,y-15);
+        ctx.fillText(dateToString(new Date(purchases[i].ts*1000)),x+2,y-15);
         ctx.beginPath();
         ctx.arc(x,y,5,0,twopi);
         ctx.stroke();
