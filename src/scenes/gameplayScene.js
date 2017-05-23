@@ -424,7 +424,8 @@ var GamePlayScene = function(game, stage)
     {
       var s = 20;
       ctx.font = s+"px Arial";
-      drawOutlinedText("ETH "+total_owned_eth, my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*2, 1, ctx);
+      drawOutlinedText("ETH "+total_owned_eth, my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*3, 1, ctx);
+      drawOutlinedText("(@ $"+fdisp(total_spent_val/total_owned_eth)+")", my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*2, 1, ctx);
       var delta = total_owned_val-total_spent_val;
       var p = delta/total_spent_val;
       drawOutlinedText("$"+fdisp(total_spent_val)+" -> $"+fdisp(total_owned_val), my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*1, 1, ctx);
