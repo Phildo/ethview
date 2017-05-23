@@ -82,6 +82,8 @@ var quarterpi = pi/4;
 var fdisp = function(f,n) //formats float for display (from 8.124512 to 8.12)
 {
   if(n == undefined) n = 2;
+  if(!isNaN(f)) return f.toFixed(2);
+  return f;
   n = Math.pow(10,n);
   return Math.round(f*n)/n;
 }
@@ -439,6 +441,22 @@ var drawOutlineText = function(txt,x,y,b,color,ctx)
   ctx.fillText(txt,x+b,y  );
   ctx.fillText(txt,x  ,y+b);
   ctx.fillText(txt,x  ,y-b);
+}
+
+var drawOutlinedText = function(txt,x,y,b,ctx)
+{
+  var col = ctx.fillStyle;
+  ctx.fillStyle = "#FFFFFF";
+  ctx.fillText(txt,x-b,y-b);
+  ctx.fillText(txt,x+b,y-b);
+  ctx.fillText(txt,x-b,y+b);
+  ctx.fillText(txt,x+b,y+b);
+  ctx.fillText(txt,x-b,y  );
+  ctx.fillText(txt,x+b,y  );
+  ctx.fillText(txt,x  ,y+b);
+  ctx.fillText(txt,x  ,y-b);
+  ctx.fillStyle = col;
+  ctx.fillText(txt,x,y);
 }
 
 //vector

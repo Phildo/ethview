@@ -7,16 +7,27 @@ var GamePlayScene = function(game, stage)
   var ctx = canv.context;
   var cam = {wx:0,wy:0,ww:canv.width/canv.height,wh:1};
 
-  var appname = "ethview";
-  var my_graph;
-  var total_owned_eth;
-  var total_spent_val;
-  var total_owned_val;
-
   var hoverer;
   var dragger;
   var clicker;
   var keyer;
+
+  var sec = 1;
+  var min = sec*60;
+  var hr  = min*60;
+  var day = hr*24;
+  var week = day*7;
+  var month = day*30;
+  var year = day*365;
+
+  var red = "#AA0000";
+  var green = "#00AA00";
+  var blue = "#008844";
+  var black = "#000000";
+  var white = "#FFFFFF";
+
+  var appname = "ethview";
+  var my_graph;
 
   var hr_btn;
   var day_btn;
@@ -31,19 +42,17 @@ var GamePlayScene = function(game, stage)
   var hover_yval;
   var hover_pos;
   var drag_xval;
-  var drag_pos;
-
-  var sec = 1;
-  var min = sec*60;
-  var hr  = min*60;
-  var day = hr*24;
-  var week = day*7;
-  var month = day*30;
-  var year = day*365;
 
   var block_n = 2000;
   var loading_latest = false;
   var enhancing = false;
+
+  var total_owned_eth;
+  var total_spent_val;
+  var total_owned_val;
+
+  var left_val;
+  var right_val;
 
   var limitGraph = function()
   {
@@ -131,6 +140,8 @@ var GamePlayScene = function(game, stage)
     dragger = new Dragger({source:stage.dispCanv.canvas});
     clicker = new Clicker({source:stage.dispCanv.canvas});
     keyer = new Keyer({source:stage.dispCanv.canvas});
+
+    hover_pos = {x:0,y:0};
 
     if(purchases)
     {
@@ -226,7 +237,8 @@ var GamePlayScene = function(game, stage)
       var x = mapVal(0,1,my_graph.disp_min_xv,my_graph.disp_max_xv,xt);
       hover_yval = my_graph.findqueryx(x);
       hover_xval = x;
-      hover_pos = {x:evt.doX,y:evt.doY};
+      hover_pos.x = evt.doX;
+      hover_pos.y = evt.doY;
     }
     my_graph.unhover = function(evt)
     {
@@ -260,10 +272,6 @@ var GamePlayScene = function(game, stage)
     {
 
     }
-
-    total_owned_eth = 0;
-    total_spent_val = 0;
-    total_owned_val = 0;
 
     var x = my_graph.x+140;
     var y = my_graph.y-30;
@@ -331,6 +339,12 @@ var GamePlayScene = function(game, stage)
     getDataBlock(BLOCK_MINUTE,block_n,callback);
     getDataBlock(BLOCK_HOUR,block_n,callback);
     getDataBlock(BLOCK_DAY,block_n,callback);
+
+    total_owned_eth = 0;
+    total_spent_val = 0;
+    total_owned_val = 0;
+    left_val = 0;
+    right_val = 0;
   };
 
   self.tick = function()
@@ -352,20 +366,78 @@ var GamePlayScene = function(game, stage)
 
   self.draw = function()
   {
+    left_val  = my_graph.findqueryx(my_graph.disp_min_xv);
+    right_val = my_graph.findqueryx(my_graph.disp_max_xv);
+    var delta = right_val-left_val;
+    var p = delta/left_val;
+    var arc_r = 5;
+
+    my_graph.draw(ctx);
+
     //cur price
+    ctx.fillStyle = black;
     ctx.textAlign = "right";
-    ctx.font = "20px Arial";
-    ctx.fillText("$"+fdisp(my_graph.yv[my_graph.yv.length-1]), my_graph.x+my_graph.w, my_graph.y-20);
+      //cur = right side
+    if(my_graph.disp_max_xv == my_graph.xv[my_graph.xv.length-1])
+    {
+      ctx.textAlign = "right";
+      ctx.font = "24px Arial";
+      ctx.fillText("$"+fdisp(my_graph.yv[my_graph.yv.length-1]), my_graph.x+my_graph.w, my_graph.y-20);
+      load_latest_btn.w = 85;
+      load_latest_btn.x = my_graph.x+my_graph.w-load_latest_btn.w;
+      load_latest_btn.h = 24;
+      load_latest_btn.y = my_graph.y-20-load_latest_btn.h;
+    }
+      //cur != right side
+    else
+    {
+      ctx.font = "20px Arial";
+      ctx.fillText("$"+fdisp(my_graph.yv[my_graph.yv.length-1]), my_graph.x+my_graph.w, my_graph.y-28);
+      ctx.font = "12px Arial";
+      ctx.fillText("$"+fdisp(right_val), my_graph.x+my_graph.w, my_graph.y-16);
+      load_latest_btn.w = 75;
+      load_latest_btn.x = my_graph.x+my_graph.w-load_latest_btn.w;
+      load_latest_btn.h = 20;
+      load_latest_btn.y = my_graph.y-28-load_latest_btn.h;
+    }
+    ctx.font = "12px Arial";
+    ctx.fillText("$"+fdisp(left_val), my_graph.x+my_graph.w-90, my_graph.y-16);
+    enhance_btn.w = 40;
+    enhance_btn.x = my_graph.x+my_graph.w-90-enhance_btn.w;
+    enhance_btn.h = 12;
+    enhance_btn.y = my_graph.y-16-enhance_btn.h;
+
+    if(p > 0)
+    {
+      ctx.fillStyle = green;
+      ctx.fillText("+$"+fdisp(delta)+" (+"+fdisp(p*100)+"%)", my_graph.x+my_graph.w-90, my_graph.y-30);
+    }
+    else
+    {
+      ctx.fillStyle = red;
+      ctx.fillText("-$"+fdisp(delta*-1)+" ("+fdisp(p*100)+"%)", my_graph.x+my_graph.w-90, my_graph.y-30);
+    }
+    ctx.fillStyle = black;
 
     //owned price
     if(keys.cmd)
     {
       var s = 20;
       ctx.font = s+"px Arial";
-      ctx.fillText("ETH "+total_owned_eth, my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*3);
-      ctx.fillText("Spent $"+fdisp(total_spent_val), my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*2);
-      ctx.fillText("Have  $"+fdisp(total_owned_val), my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*1);
-      ctx.fillText("delta $"+fdisp(total_owned_val-total_spent_val), my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*0);
+      drawOutlinedText("ETH "+total_owned_eth, my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*2, 1, ctx);
+      var delta = total_owned_val-total_spent_val;
+      var p = delta/total_spent_val;
+      drawOutlinedText("$"+fdisp(total_spent_val)+" -> $"+fdisp(total_owned_val), my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*1, 1, ctx);
+      if(delta > 0)
+      {
+        ctx.fillStyle = green;
+        drawOutlinedText("+$"+fdisp(delta)+" (+"+fdisp(p*100)+"%)", my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*0, 1, ctx);
+      }
+      else
+      {
+        ctx.fillStyle = red;
+        drawOutlinedText("-$"+fdisp(delta*-1)+" ("+fdisp(p*100)+"%)", my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*0, 1, ctx);
+      }
     }
 
     //hover
@@ -377,12 +449,12 @@ var GamePlayScene = function(game, stage)
     ctx.lineWidth = 0.5;
     if(hover_xval)
     {
-      ctx.fillText("$"+fdisp(hover_yval), my_graph.x,my_graph.y-30);
+      drawOutlinedText("$"+fdisp(hover_yval), my_graph.x,my_graph.y-30, 1, ctx);
       var date = new Date(floor(hover_xval)*1000);
-      ctx.fillText(dateToString(date),my_graph.x,my_graph.y-15);
+      drawOutlinedText(dateToString(date),my_graph.x,my_graph.y-15, 1, ctx);
       y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, hover_yval);
       ctx.beginPath();
-      ctx.arc(hover_pos.x,y,5,0,twopi);
+      ctx.arc(hover_pos.x,y,arc_r,0,twopi);
       ctx.stroke();
       ctx.beginPath();
       ctx.moveTo(my_graph.x           ,y);
@@ -393,7 +465,7 @@ var GamePlayScene = function(game, stage)
     }
 
     //time (x) delim
-    ctx.strokeStyle = "#000000";
+    ctx.strokeStyle = black;
     ctx.lineWidth = 0.1;
     ctx.beginPath();
       //hour
@@ -436,54 +508,111 @@ var GamePlayScene = function(game, stage)
     //window start/end (y) delim
     ctx.beginPath();
       //start
-    val = my_graph.findqueryx(my_graph.disp_min_xv);
-    y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, val);
-    ctx.fillText("$"+fdisp(val), my_graph.x+20, y-2);
+    y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, left_val);
     ctx.moveTo(my_graph.x           ,y);
     ctx.lineTo(my_graph.x+my_graph.w,y);
       //end
     val = my_graph.findqueryx(my_graph.disp_max_xv);
-    y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, val);
-    ctx.fillText("$"+fdisp(val), my_graph.x+my_graph.w-100, y-2);
+    y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, right_val);
     ctx.moveTo(my_graph.x           ,y);
     ctx.lineTo(my_graph.x+my_graph.w,y);
     ctx.stroke();
 
     //purchases
-    ctx.strokeStyle = "#008844";
+    ctx.strokeStyle = blue;
     ctx.lineWidth = 0.5;
     if(purchases)
     {
+      var closest_i = 0;
+      var closest_x = 999999999;
+      var closest_y = 0;
+      var closest_val = 0;
       for(var i = 0; i < purchases.length; i++)
       {
         val = my_graph.findqueryx(purchases[i].ts);
         x = mapVal(my_graph.disp_min_xv, my_graph.disp_max_xv, my_graph.x, my_graph.x+my_graph.w, purchases[i].ts);
         y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, val);
-        ctx.fillText("$"+fdisp(val), x+2,y-30);
-        ctx.fillText(dateToString(new Date(purchases[i].ts*1000)),x+2,y-15);
+        if(abs(x-hover_pos.x) < abs(closest_x-hover_pos.x))
+        {
+          closest_i = i;
+          closest_x = x;
+          closest_y = y;
+          closest_val = val;
+        }
+        //circle
         ctx.beginPath();
-        ctx.arc(x,y,5,0,twopi);
+        ctx.arc(x,y,arc_r,0,twopi);
+        ctx.stroke();
+        //horiz
+        ctx.beginPath();
+        if(x-arc_r > my_graph.x && x-arc_r < my_graph.x+my_graph.w)
+        {
+          ctx.moveTo(my_graph.x,y);
+          ctx.lineTo(x-arc_r,   y);
+        }
+        ctx.moveTo(my_graph.x-arc_r,y);
+        ctx.lineTo(my_graph.x+arc_r,y);
+        if(x+arc_r > my_graph.x && x+arc_r < my_graph.x+my_graph.w)
+        {
+          ctx.moveTo(my_graph.x+my_graph.w,y);
+          ctx.lineTo(x+arc_r,   y);
+        }
+        ctx.moveTo(my_graph.x+my_graph.w-arc_r,y);
+        ctx.lineTo(my_graph.x+my_graph.w+arc_r,y);
+        //vert
+        ctx.moveTo(x,y+arc_r);
+        ctx.lineTo(x,y+arc_r*5);
+        ctx.moveTo(x,y-arc_r);
+        ctx.lineTo(x,y-arc_r*5);
+        ctx.stroke();
+      }
+      if(hover_xval)
+      {
+        x = closest_x;
+        y = closest_y;
+        val = closest_val;
+        i = closest_i;
+        ctx.fillStyle = black;
+        drawOutlinedText("ETH "+fdisp(purchases[i].amt)+" @ $"+fdisp(val), x+2,y+30, 1, ctx);
+        var spent = purchases[i].amt*val;
+        var have = purchases[i].amt*my_graph.yv[my_graph.yv.length-1];
+        var delta = have-spent;
+        var p = delta/spent;
+        drawOutlinedText("($"+fdisp(spent)+" -> $"+fdisp(have)+")", x+2,y+45, 1, ctx);
+        if(delta > 0)
+        {
+          ctx.fillStyle = green;
+          drawOutlinedText("+$"+fdisp(delta)+" (+"+fdisp(p*100)+"%)", x+2, y+60, 1, ctx);
+        }
+        else
+        {
+          ctx.fillStyle = red;
+          drawOutlinedText("-$"+fdisp(delta*-1)+" ("+fdisp(p*100)+"%)", x+2, y+60, 1, ctx);
+        }
+        ctx.fillStyle = black;
+        ctx.strokeStyle = black;
+        drawOutlinedText(dateToString(new Date(purchases[i].ts*1000)),x+2,y+75, 1, ctx);
+        ctx.beginPath();
+        ctx.arc(x,y,arc_r,0,twopi);
         ctx.stroke();
         ctx.beginPath();
-        ctx.moveTo(my_graph.x           ,y);
-        ctx.lineTo(my_graph.x+my_graph.w,y);
-        ctx.moveTo(x,my_graph.y);
-        ctx.lineTo(x,my_graph.y+my_graph.h);
+        ctx.moveTo(x,y+arc_r);
+        ctx.lineTo(x,y+arc_r*5);
+        ctx.moveTo(x,y-arc_r);
+        ctx.lineTo(x,y-arc_r*5);
         ctx.stroke();
       }
     }
 
     //buttons
-    ctx.fillStyle = "#000000";
-    ctx.strokeStyle = "#000000";
+    ctx.fillStyle = black;
+    ctx.strokeStyle = black;
     drawbtntitle(hr_btn,"hr");
     drawbtntitle(day_btn,"day");
     drawbtntitle(week_btn,"week");
     drawbtntitle(month_btn,"month");
-    if(!loading_latest) drawbtntitle(load_latest_btn,"latest");
-    if(!enhancing)      drawbtntitle(enhance_btn,"enhance");
-
-    my_graph.draw(ctx);
+    if(loading_latest) drawbtntitle(load_latest_btn,"");
+    if(enhancing)      drawbtntitle(enhance_btn,"");
   };
   var drawbtntitle = function(btn,title)
   {
