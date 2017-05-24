@@ -26,7 +26,11 @@ var GamePlayScene = function(game, stage)
   var black = "#000000";
   var white = "#FFFFFF";
 
-  var appname = "ethview";
+  var appname = "coinview";
+  var ETH = "ETH";
+  var BTC = "BTC";
+  var LTE = "LTE";
+  var cur_coin = ETH;
   var my_graph;
 
   var hr_btn;
@@ -68,7 +72,7 @@ var GamePlayScene = function(game, stage)
 
   var getDataPt = function(ts,callback)
   {
-    var from = "ETH";
+    var from = cur_coin;
     var to = "USD";
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function()
@@ -104,7 +108,7 @@ var GamePlayScene = function(game, stage)
       case BLOCK_HOUR:   span = "hour";   break;
     }
 
-    var from = "ETH";
+    var from = cur_coin;
     var to = "USD";
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function()
@@ -333,7 +337,7 @@ var GamePlayScene = function(game, stage)
           total_spent_val += purchases[i].amt*my_graph.findqueryx(purchases[i].ts);
         }
       }
-      total_owned_val = my_graph.yv[my_graph.yv.length-1]*total_owned_eth;;
+      total_owned_val = my_graph.yv[my_graph.yv.length-1]*total_owned_eth;
       limitGraph();
     }
     getDataBlock(BLOCK_MINUTE,block_n,callback);
@@ -424,7 +428,7 @@ var GamePlayScene = function(game, stage)
     {
       var s = 20;
       ctx.font = s+"px Arial";
-      drawOutlinedText("ETH "+total_owned_eth, my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*3, 1, ctx);
+      drawOutlinedText(cur_coin+" "+total_owned_eth, my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*3, 1, ctx);
       drawOutlinedText("(@ $"+fdisp(total_spent_val/total_owned_eth)+")", my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*2, 1, ctx);
       var delta = total_owned_val-total_spent_val;
       var p = delta/total_spent_val;
@@ -443,6 +447,7 @@ var GamePlayScene = function(game, stage)
 
     //hover
     ctx.textAlign = "left";
+    ctx.strokeStyle = black;
     ctx.font = "12px Arial";
     var x;
     var y;
@@ -528,6 +533,19 @@ var GamePlayScene = function(game, stage)
       var closest_x = 999999999;
       var closest_y = 0;
       var closest_val = 0;
+
+      val = total_spent_val/total_owned_eth;
+      y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, val);
+      ctx.strokeStyle = green;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(my_graph.x-arc_r*2,y);
+      ctx.lineTo(my_graph.x+arc_r*2,y);
+      ctx.moveTo(my_graph.x+my_graph.w-arc_r*2,y);
+      ctx.lineTo(my_graph.x+my_graph.w+arc_r*2,y);
+      ctx.stroke();
+
+      ctx.lineWidth = 0.5;
       for(var i = 0; i < purchases.length; i++)
       {
         val = my_graph.findqueryx(purchases[i].ts);
@@ -570,29 +588,35 @@ var GamePlayScene = function(game, stage)
       if(hover_xval)
       {
         x = closest_x;
+        var xoff = 2;
+        if(x > my_graph.x+my_graph.w-100)
+        {
+          xoff = -2;
+          ctx.textAlign = "right";
+        }
         y = closest_y;
         val = closest_val;
         i = closest_i;
         ctx.fillStyle = black;
-        drawOutlinedText("ETH "+fdisp(purchases[i].amt)+" @ $"+fdisp(val), x+2,y+30, 1, ctx);
+        drawOutlinedText(cur_coin+" "+fdisp(purchases[i].amt)+" @ $"+fdisp(val), x+xoff,y+30, 1, ctx);
         var spent = purchases[i].amt*val;
         var have = purchases[i].amt*my_graph.yv[my_graph.yv.length-1];
         var delta = have-spent;
         var p = delta/spent;
-        drawOutlinedText("($"+fdisp(spent)+" -> $"+fdisp(have)+")", x+2,y+45, 1, ctx);
+        drawOutlinedText("($"+fdisp(spent)+" -> $"+fdisp(have)+")", x+xoff,y+45, 1, ctx);
         if(delta > 0)
         {
           ctx.fillStyle = green;
-          drawOutlinedText("+$"+fdisp(delta)+" (+"+fdisp(p*100)+"%)", x+2, y+60, 1, ctx);
+          drawOutlinedText("+$"+fdisp(delta)+" (+"+fdisp(p*100)+"%)", x+xoff, y+60, 1, ctx);
         }
         else
         {
           ctx.fillStyle = red;
-          drawOutlinedText("-$"+fdisp(delta*-1)+" ("+fdisp(p*100)+"%)", x+2, y+60, 1, ctx);
+          drawOutlinedText("-$"+fdisp(delta*-1)+" ("+fdisp(p*100)+"%)", x+xoff, y+60, 1, ctx);
         }
         ctx.fillStyle = black;
         ctx.strokeStyle = black;
-        drawOutlinedText(dateToString(new Date(purchases[i].ts*1000)),x+2,y+75, 1, ctx);
+        drawOutlinedText(dateToString(new Date(purchases[i].ts*1000)),x+xoff,y+75, 1, ctx);
         ctx.beginPath();
         ctx.arc(x,y,arc_r,0,twopi);
         ctx.stroke();
@@ -602,6 +626,7 @@ var GamePlayScene = function(game, stage)
         ctx.moveTo(x,y-arc_r);
         ctx.lineTo(x,y-arc_r*5);
         ctx.stroke();
+        ctx.textAlign = "left";
       }
     }
 
