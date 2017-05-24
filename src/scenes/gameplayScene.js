@@ -63,6 +63,15 @@ var GamePlayScene = function(game, stage)
 
   var left_val;
   var right_val;
+  var span_delta;
+  var span_delta_p;
+
+  var target_disp_min_xv;
+  var target_disp_max_xv;
+  var target_disp_min_yv;
+  var target_disp_max_yv;
+  var target_disp_ttl;
+  var target_disp_max_ttl;
 
   var alignGraphs = function()
   {
@@ -77,15 +86,34 @@ var GamePlayScene = function(game, stage)
     ltc_graph.span = my_graph.span;
   }
 
+  var targetSelf = function()
+  {
+    target_disp_min_xv = my_graph.disp_min_xv;
+    target_disp_max_xv = my_graph.disp_max_xv;
+    target_disp_min_yv = my_graph.disp_min_yv;
+    target_disp_max_yv = my_graph.disp_max_yv;
+  }
+
   var limitGraph = function()
   {
     if(my_graph.disp_max_xv > my_graph.xv[my_graph.xv.length-1])
     {
       my_graph.disp_min_xv -= my_graph.disp_max_xv-my_graph.xv[my_graph.xv.length-1];
       my_graph.disp_max_xv = my_graph.xv[my_graph.xv.length-1];
+      target_disp_min_xv = my_graph.disp_min_xv;
+      target_disp_max_xv = my_graph.disp_max_xv;
     }
-    if(my_graph.disp_min_xv > my_graph.disp_max_xv-hr)   my_graph.disp_min_xv = my_graph.disp_max_xv-hr;
-    if(my_graph.disp_min_xv < my_graph.disp_max_xv-year) my_graph.disp_min_xv = my_graph.disp_max_xv-year;
+    if(my_graph.disp_min_xv > my_graph.disp_max_xv-hr)   { my_graph.disp_min_xv = my_graph.disp_max_xv-hr;   target_disp_min_xv = my_graph.disp_min_xv; }
+    if(my_graph.disp_min_xv < my_graph.disp_max_xv-year) { my_graph.disp_min_xv = my_graph.disp_max_xv-year; target_disp_min_xv = my_graph.disp_min_xv; }
+
+    if(target_disp_max_xv > my_graph.xv[my_graph.xv.length-1])
+    {
+      target_disp_min_xv -= my_graph.disp_max_xv-my_graph.xv[my_graph.xv.length-1];
+      target_disp_max_xv = my_graph.xv[my_graph.xv.length-1];
+    }
+    if(target_disp_min_xv > my_graph.disp_max_xv-hr)   target_disp_min_xv = my_graph.disp_max_xv-hr;
+    if(target_disp_min_xv < my_graph.disp_max_xv-year) target_disp_min_xv = my_graph.disp_max_xv-year;
+
     alignGraphs();
     my_graph.dirty = true;
   }
@@ -105,16 +133,27 @@ var GamePlayScene = function(game, stage)
     delta = highest-lowest;
     lowest  -= delta*0.1;
     highest += delta*0.1;
-    my_graph.disp_min_yv = lowest;
-    my_graph.disp_max_yv = highest;
+    target_disp_min_yv = lowest;
+    target_disp_max_yv = highest;
+    target_disp_ttl = target_disp_max_ttl;
     limitGraph();
   }
 
   var normalizeGraph = function()
   {
-    my_graph.clampDispY();
-    my_graph.disp_min_yv = 0;
-    my_graph.disp_max_yv *= 1.1;
+    if(my_graph.known_min_yv == my_graph.known_max_yv)
+    {
+      target_disp_min_yv = my_graph.known_min_yv-1;
+      target_disp_max_yv = my_graph.known_max_yv+1;
+    }
+    else
+    {
+      target_disp_min_yv = my_graph.known_min_yv;
+      target_disp_max_yv = my_graph.known_max_yv;
+    }
+    target_disp_min_yv = 0;
+    target_disp_max_yv *= 1.1;
+    target_disp_ttl = target_disp_max_ttl;
     limitGraph();
   }
 
@@ -195,6 +234,18 @@ var GamePlayScene = function(game, stage)
 
     hover_pos = {x:0,y:0};
 
+    left_val = 0;
+    right_val = 0;
+    span_delta = 0;
+    span_delta_p = 0;
+
+    target_disp_min_xv = 0;
+    target_disp_max_xv = 0;
+    target_disp_min_yv = 0;
+    target_disp_max_yv = 0;
+    target_disp_ttl = 0;
+    target_disp_max_ttl = 20;
+
     if(purchases)
     {
       if(purchases.ETH)
@@ -247,14 +298,16 @@ var GamePlayScene = function(game, stage)
           break;
           case 37: //left
             delta = my_graph.disp_max_xv-my_graph.disp_min_xv;
-            my_graph.disp_min_xv -= delta;
-            my_graph.disp_max_xv -= delta;
+            target_disp_min_xv -= delta;
+            target_disp_max_xv -= delta;
+            target_disp_ttl = target_disp_ttl_max;
             limitGraph();
           break;
           case 39: //right
             delta = my_graph.disp_max_xv-my_graph.disp_min_xv;
-            my_graph.disp_min_xv += delta;
-            my_graph.disp_max_xv += delta;
+            target_disp_min_xv += delta;
+            target_disp_max_xv += delta;
+            target_disp_ttl = target_disp_ttl_max;
             limitGraph();
           break;
         }
@@ -353,12 +406,15 @@ var GamePlayScene = function(game, stage)
         var old_xt = mapVal(my_graph.disp_min_xv,my_graph.disp_max_xv,0,1,drag_xval);
         if(xt > 1) return;
         my_graph.disp_min_xv = mapVal(my_graph.disp_max_xv,new_drag_xval,my_graph.disp_max_xv,drag_xval,my_graph.disp_min_xv);
+        target_disp_min_xv = my_graph.disp_min_xv;
         my_graph.span = "";
       }
       else
       {
         my_graph.disp_min_xv -= new_drag_xval-drag_xval;
         my_graph.disp_max_xv -= new_drag_xval-drag_xval;
+        target_disp_min_xv = my_graph.disp_min_xv;
+        target_disp_max_xv = my_graph.disp_max_xv;
       }
       limitGraph();
     }
@@ -379,27 +435,31 @@ var GamePlayScene = function(game, stage)
     ltc_btn = new ButtonBox(x,y,w,h,function(){ my_graph = ltc_graph; if(keys.alt) stretchGraph(); else normalizeGraph(); my_graph.dirty = true; });
     x = my_graph.x+140;
     y = my_graph.y-30;
-    hr_btn    = new ButtonBox(x,y,w,h,function(){ my_graph.disp_min_xv = my_graph.disp_max_xv-hr; my_graph.span = HR; limitGraph(); });
+    hr_btn    = new ButtonBox(x,y,w,h,function(){ target_disp_min_xv = my_graph.disp_max_xv-hr; target_disp_ttl = target_disp_max_ttl; my_graph.span = HR; limitGraph(); });
     x += w+s;
-    day_btn   = new ButtonBox(x,y,w,h,function(){ my_graph.disp_min_xv = my_graph.disp_max_xv-day; my_graph.span = DAY; limitGraph(); });
+    day_btn   = new ButtonBox(x,y,w,h,function(){ target_disp_min_xv = my_graph.disp_max_xv-day; target_disp_ttl = target_disp_max_ttl; my_graph.span = DAY; limitGraph(); });
     x += w+s;
-    week_btn  = new ButtonBox(x,y,w,h,function(){ my_graph.disp_min_xv = my_graph.disp_max_xv-week; my_graph.span = WEEK; limitGraph(); });
+    week_btn  = new ButtonBox(x,y,w,h,function(){ target_disp_min_xv = my_graph.disp_max_xv-week; target_disp_ttl = target_disp_max_ttl; my_graph.span = WEEK; limitGraph(); });
     x += w+s;
-    month_btn = new ButtonBox(x,y,w,h,function(){ my_graph.disp_min_xv = my_graph.disp_max_xv-month; my_graph.span = MONTH; limitGraph(); });
+    month_btn = new ButtonBox(x,y,w,h,function(){ target_disp_min_xv = my_graph.disp_max_xv-month; target_disp_ttl = target_disp_max_ttl; my_graph.span = MONTH; limitGraph(); });
     x += w+s*3;
     load_latest_btn = new ButtonBox(x,y,w,h,function()
     {
       if(loading_latest) return;
       loading_latest = true;
       delta = my_graph.disp_max_xv-my_graph.disp_min_xv;
-      my_graph.disp_max_xv = my_graph.xv[my_graph.xv.length-1];
-      my_graph.disp_min_xv = my_graph.disp_max_xv - delta;
+      target_disp_max_xv = my_graph.xv[my_graph.xv.length-1];
+      target_disp_min_xv = my_graph.disp_max_xv - delta;
+      target_disp_ttl = target_disp_max_ttl;
+      limitGraph();
       my_graph.dirty = true;
       getDataBlock(BLOCK_MINUTE,my_graph.coin,my_graph,block_n,function()
       {
         delta = my_graph.disp_max_xv-my_graph.disp_min_xv;
-        my_graph.disp_max_xv = my_graph.xv[my_graph.xv.length-1];
-        my_graph.disp_min_xv = my_graph.disp_max_xv - delta;
+        target_disp_max_xv = my_graph.xv[my_graph.xv.length-1];
+        target_disp_min_xv = my_graph.disp_max_xv - delta;
+        target_disp_ttl = target_disp_max_ttl;
+        limitGraph();
         loading_latest = false;
       });
     });
@@ -423,6 +483,10 @@ var GamePlayScene = function(game, stage)
       graph.span = DAY;
       graph.disp_min_yv = 0;
       graph.disp_max_yv *= 1.1;
+      target_disp_min_xv = graph.disp_min_xv;
+      target_disp_max_xv = graph.disp_max_xv;
+      target_disp_min_yv = my_graph.disp_min_yv; //<- "my_graph" distinction important
+      target_disp_max_yv = my_graph.disp_max_yv; //<- "my_graph" distinction important
 
       if(purchases && purchases[graph.coin])
       {
@@ -436,6 +500,7 @@ var GamePlayScene = function(game, stage)
         }
       }
       graph.total_owned_val = graph.yv[graph.yv.length-1]*graph.total_owned;
+
       limitGraph();
     }
     getDataBlock(BLOCK_MINUTE,ETH,eth_graph,block_n,callback);
@@ -448,8 +513,6 @@ var GamePlayScene = function(game, stage)
     getDataBlock(BLOCK_HOUR,  LTC,ltc_graph,block_n,callback);
     getDataBlock(BLOCK_DAY,   LTC,ltc_graph,block_n,callback);
 
-    left_val = 0;
-    right_val = 0;
   };
 
   self.tick = function()
@@ -470,14 +533,35 @@ var GamePlayScene = function(game, stage)
     clicker.flush();
     keyer.filter(keys);
     keyer.flush();
+
+    left_val  = my_graph.findqueryx(my_graph.disp_min_xv);
+    right_val = my_graph.findqueryx(my_graph.disp_max_xv);
+    span_delta = right_val-left_val;
+    span_delta_p = span_delta/left_val;
+
+    if(target_disp_ttl > 0)
+    {
+      my_graph.disp_min_xv = lerp(my_graph.disp_min_xv,target_disp_min_xv,0.3);
+      my_graph.disp_max_xv = lerp(my_graph.disp_max_xv,target_disp_max_xv,0.3);
+      my_graph.disp_min_yv = lerp(my_graph.disp_min_yv,target_disp_min_yv,0.3);
+      my_graph.disp_max_yv = lerp(my_graph.disp_max_yv,target_disp_max_yv,0.3);
+      alignGraphs();
+      limitGraph();
+      target_disp_ttl--;
+    }
+    if(target_disp_ttl == 0)
+    {
+      my_graph.disp_min_xv = target_disp_min_xv;
+      my_graph.disp_max_xv = target_disp_max_xv;
+      my_graph.disp_min_yv = target_disp_min_yv;
+      my_graph.disp_max_yv = target_disp_max_yv;
+    }
   };
 
   self.draw = function()
   {
-    left_val  = my_graph.findqueryx(my_graph.disp_min_xv);
-    right_val = my_graph.findqueryx(my_graph.disp_max_xv);
-    var delta = right_val-left_val;
-    var p = delta/left_val;
+    var delta = span_delta;
+    var p = span_delta_p;
     var arc_r = 5;
 
     my_graph.draw(ctx);
