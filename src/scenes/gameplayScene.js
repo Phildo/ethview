@@ -22,7 +22,7 @@ var GamePlayScene = function(game, stage)
 
   var red = "#AA0000";
   var green = "#00AA00";
-  var blue = "#008844";
+  var blue = "#004488";
   var black = "#000000";
   var white = "#FFFFFF";
 
@@ -30,6 +30,10 @@ var GamePlayScene = function(game, stage)
   var ETH = "ETH";
   var BTC = "BTC";
   var LTC = "LTC";
+  var HR = "HR";
+  var DAY = "DAY";
+  var WEEK = "WEEK";
+  var MONTH = "MONTH";
   var eth_graph;
   var btc_graph;
   var ltc_graph;
@@ -68,6 +72,9 @@ var GamePlayScene = function(game, stage)
     btc_graph.disp_max_xv = my_graph.disp_max_xv;
     ltc_graph.disp_min_xv = my_graph.disp_min_xv;
     ltc_graph.disp_max_xv = my_graph.disp_max_xv;
+    eth_graph.span = my_graph.span;
+    btc_graph.span = my_graph.span;
+    ltc_graph.span = my_graph.span;
   }
 
   var limitGraph = function()
@@ -81,6 +88,34 @@ var GamePlayScene = function(game, stage)
     if(my_graph.disp_min_xv < my_graph.disp_max_xv-year) my_graph.disp_min_xv = my_graph.disp_max_xv-year;
     alignGraphs();
     my_graph.dirty = true;
+  }
+
+  var stretchGraph = function()
+  {
+    var index = my_graph.findibeforex(my_graph.disp_min_xv);
+    var lowest = my_graph.yv[index];
+    var highest = my_graph.yv[index];
+    var val;
+    for(var i = 0; i < my_graph.w; i++)
+    {
+      val = my_graph.nextqueryxt(i/my_graph.w,index);
+      if(val < lowest)  lowest  = val;
+      if(val > highest) highest = val;
+    }
+    delta = highest-lowest;
+    lowest  -= delta*0.1;
+    highest += delta*0.1;
+    my_graph.disp_min_yv = lowest;
+    my_graph.disp_max_yv = highest;
+    limitGraph();
+  }
+
+  var normalizeGraph = function()
+  {
+    my_graph.clampDispY();
+    my_graph.disp_min_yv = 0;
+    my_graph.disp_max_yv *= 1.1;
+    limitGraph();
   }
 
   var getDataPt = function(ts,graph,callback)
@@ -204,22 +239,7 @@ var GamePlayScene = function(game, stage)
           break;
           case 18: //alt
             self.alt = true;
-            var index = my_graph.findibeforex(my_graph.disp_min_xv);
-            var lowest = my_graph.yv[index];
-            var highest = my_graph.yv[index];
-            var val;
-            for(var i = 0; i < my_graph.w; i++)
-            {
-              val = my_graph.nextqueryxt(i/my_graph.w,index);
-              if(val < lowest)  lowest  = val;
-              if(val > highest) highest = val;
-            }
-            delta = highest-lowest;
-            lowest  -= delta*0.1;
-            highest += delta*0.1;
-            my_graph.disp_min_yv = lowest;
-            my_graph.disp_max_yv = highest;
-            limitGraph();
+            stretchGraph();
           break;
           case 91: //cmd
           case 93: //cmd
@@ -248,10 +268,7 @@ var GamePlayScene = function(game, stage)
           break;
           case 18:
             self.alt = false;
-            my_graph.clampDispY();
-            my_graph.disp_min_yv = 0;
-            my_graph.disp_max_yv *= 1.1;
-            limitGraph();
+            normalizeGraph();
           break;
           case 91: //cmd
           case 93: //cmd
@@ -336,6 +353,7 @@ var GamePlayScene = function(game, stage)
         var old_xt = mapVal(my_graph.disp_min_xv,my_graph.disp_max_xv,0,1,drag_xval);
         if(xt > 1) return;
         my_graph.disp_min_xv = mapVal(my_graph.disp_max_xv,new_drag_xval,my_graph.disp_max_xv,drag_xval,my_graph.disp_min_xv);
+        my_graph.span = "";
       }
       else
       {
@@ -354,20 +372,20 @@ var GamePlayScene = function(game, stage)
     var h = 20;
     var w = 50;
     var s = 10;
-    eth_btn = new ButtonBox(x,y,w,h,function(){ my_graph = eth_graph; my_graph.dirty = true; });
+    eth_btn = new ButtonBox(x,y,w,h,function(){ my_graph = eth_graph; if(keys.alt) stretchGraph(); else normalizeGraph(); my_graph.dirty = true; });
     x += w+s;
-    btc_btn = new ButtonBox(x,y,w,h,function(){ my_graph = btc_graph; my_graph.dirty = true; });
+    btc_btn = new ButtonBox(x,y,w,h,function(){ my_graph = btc_graph; if(keys.alt) stretchGraph(); else normalizeGraph(); my_graph.dirty = true; });
     x += w+s;
-    ltc_btn = new ButtonBox(x,y,w,h,function(){ my_graph = ltc_graph; my_graph.dirty = true; });
+    ltc_btn = new ButtonBox(x,y,w,h,function(){ my_graph = ltc_graph; if(keys.alt) stretchGraph(); else normalizeGraph(); my_graph.dirty = true; });
     x = my_graph.x+140;
     y = my_graph.y-30;
-    hr_btn    = new ButtonBox(x,y,w,h,function(){ my_graph.disp_min_xv = my_graph.disp_max_xv-hr; limitGraph(); });
+    hr_btn    = new ButtonBox(x,y,w,h,function(){ my_graph.disp_min_xv = my_graph.disp_max_xv-hr; my_graph.span = HR; limitGraph(); });
     x += w+s;
-    day_btn   = new ButtonBox(x,y,w,h,function(){ my_graph.disp_min_xv = my_graph.disp_max_xv-day; limitGraph(); });
+    day_btn   = new ButtonBox(x,y,w,h,function(){ my_graph.disp_min_xv = my_graph.disp_max_xv-day; my_graph.span = DAY; limitGraph(); });
     x += w+s;
-    week_btn  = new ButtonBox(x,y,w,h,function(){ my_graph.disp_min_xv = my_graph.disp_max_xv-week; limitGraph(); });
+    week_btn  = new ButtonBox(x,y,w,h,function(){ my_graph.disp_min_xv = my_graph.disp_max_xv-week; my_graph.span = WEEK; limitGraph(); });
     x += w+s;
-    month_btn = new ButtonBox(x,y,w,h,function(){ my_graph.disp_min_xv = my_graph.disp_max_xv-month; limitGraph(); });
+    month_btn = new ButtonBox(x,y,w,h,function(){ my_graph.disp_min_xv = my_graph.disp_max_xv-month; my_graph.span = MONTH; limitGraph(); });
     x += w+s*3;
     load_latest_btn = new ButtonBox(x,y,w,h,function()
     {
@@ -402,6 +420,7 @@ var GamePlayScene = function(game, stage)
     {
       graph.clampDisp();
       graph.disp_min_xv = graph.disp_max_xv-day;
+      graph.span = DAY;
       graph.disp_min_yv = 0;
       graph.disp_max_yv *= 1.1;
 
@@ -469,6 +488,12 @@ var GamePlayScene = function(game, stage)
       //cur = right side
     if(my_graph.disp_max_xv == my_graph.xv[my_graph.xv.length-1])
     {
+      ctx.strokeStyle = blue;
+      ctx.beginPath();
+      ctx.moveTo(my_graph.x+my_graph.w+1,my_graph.y);
+      ctx.lineTo(my_graph.x+my_graph.w+1,my_graph.y+my_graph.h);
+      ctx.stroke();
+      ctx.strokeStyle = black;
       ctx.font = "24px Arial";
       ctx.fillText("$"+fdisp(my_graph.yv[my_graph.yv.length-1]), my_graph.x+my_graph.w, my_graph.y-20);
       load_latest_btn.w = 85;
@@ -531,11 +556,11 @@ var GamePlayScene = function(game, stage)
 
     //hover
     ctx.textAlign = "left";
-    ctx.strokeStyle = black;
+    ctx.fillStyle = black;
     ctx.font = "12px Arial";
     var x;
     var y;
-    ctx.strokeStyle = "#004488";
+    ctx.strokeStyle = blue;
     ctx.lineWidth = 0.5;
     if(hover_xval)
     {
@@ -715,22 +740,28 @@ var GamePlayScene = function(game, stage)
     }
 
     //buttons
-    ctx.fillStyle = black;
     ctx.strokeStyle = black;
-    drawbtntitle(eth_btn,ETH);
-    drawbtntitle(btc_btn,BTC);
-    drawbtntitle(ltc_btn,LTC);
-    drawbtntitle(hr_btn,"hr");
-    drawbtntitle(day_btn,"day");
-    drawbtntitle(week_btn,"week");
-    drawbtntitle(month_btn,"month");
+    drawbtntitle(eth_btn,ETH,my_graph.coin == ETH);
+    drawbtntitle(btc_btn,BTC,my_graph.coin == BTC);
+    drawbtntitle(ltc_btn,LTC,my_graph.coin == LTC);
+    drawbtntitle(hr_btn,"hr",my_graph.span == HR);
+    drawbtntitle(day_btn,"day",my_graph.span == DAY);
+    drawbtntitle(week_btn,"week",my_graph.span == WEEK);
+    drawbtntitle(month_btn,"month",my_graph.span == MONTH);
     if(loading_latest) drawbtntitle(load_latest_btn,"");
     if(enhancing)      drawbtntitle(enhance_btn,"");
   };
-  var drawbtntitle = function(btn,title)
+  var drawbtntitle = function(btn,title,fill)
   {
+    if(fill)
+    {
+      ctx.fillStyle = blue;
+      ctx.fillRect(btn.x,btn.y,btn.w,btn.h);
+    }
     ctx.strokeRect(btn.x,btn.y,btn.w,btn.h);
-    ctx.fillText(title,btn.x+2,btn.y+btn.h-2);
+    ctx.fillStyle = black;
+    drawOutlinedText(title, btn.x+2, btn.y+btn.h-2, 1, ctx);
+    drawOutlinedText(title, btn.x+2, btn.y+btn.h-2, 1, ctx);
   }
 
   self.cleanup = function()
