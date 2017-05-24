@@ -29,10 +29,16 @@ var GamePlayScene = function(game, stage)
   var appname = "coinview";
   var ETH = "ETH";
   var BTC = "BTC";
-  var LTE = "LTE";
-  var cur_coin = ETH;
+  var LTC = "LTC";
+  var eth_graph;
+  var btc_graph;
+  var ltc_graph;
   var my_graph;
+  var graph_cover;
 
+  var eth_btn;
+  var btc_btn;
+  var ltc_btn;
   var hr_btn;
   var day_btn;
   var week_btn;
@@ -51,12 +57,18 @@ var GamePlayScene = function(game, stage)
   var loading_latest = false;
   var enhancing = false;
 
-  var total_owned_eth;
-  var total_spent_val;
-  var total_owned_val;
-
   var left_val;
   var right_val;
+
+  var alignGraphs = function()
+  {
+    eth_graph.disp_min_xv = my_graph.disp_min_xv;
+    eth_graph.disp_max_xv = my_graph.disp_max_xv;
+    btc_graph.disp_min_xv = my_graph.disp_min_xv;
+    btc_graph.disp_max_xv = my_graph.disp_max_xv;
+    ltc_graph.disp_min_xv = my_graph.disp_min_xv;
+    ltc_graph.disp_max_xv = my_graph.disp_max_xv;
+  }
 
   var limitGraph = function()
   {
@@ -67,12 +79,13 @@ var GamePlayScene = function(game, stage)
     }
     if(my_graph.disp_min_xv > my_graph.disp_max_xv-hr)   my_graph.disp_min_xv = my_graph.disp_max_xv-hr;
     if(my_graph.disp_min_xv < my_graph.disp_max_xv-year) my_graph.disp_min_xv = my_graph.disp_max_xv-year;
+    alignGraphs();
     my_graph.dirty = true;
   }
 
-  var getDataPt = function(ts,callback)
+  var getDataPt = function(ts,graph,callback)
   {
-    var from = cur_coin;
+    var from = graph.coin;
     var to = "USD";
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function()
@@ -84,7 +97,7 @@ var GamePlayScene = function(game, stage)
           var r = JSON.parse(xhr.responseText);
           if(r && r[from] && r[from][to])
           {
-            my_graph.insertDataNext(ts,r[from][to],0);
+            graph.insertDataNext(ts,r[from][to],0);
             callback();
           }
         }
@@ -98,7 +111,7 @@ var GamePlayScene = function(game, stage)
   var BLOCK_DAY    = ENUM; ENUM++;
   var BLOCK_MINUTE = ENUM; ENUM++;
   var BLOCK_HOUR   = ENUM; ENUM++;
-  var getDataBlock = function(block,n,callback)
+  var getDataBlock = function(block,coin,graph,n,callback)
   {
     var span = "day";
     switch(block)
@@ -108,7 +121,7 @@ var GamePlayScene = function(game, stage)
       case BLOCK_HOUR:   span = "hour";   break;
     }
 
-    var from = cur_coin;
+    var from = coin;
     var to = "USD";
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function()
@@ -128,8 +141,8 @@ var GamePlayScene = function(game, stage)
               x[i] = r.Data[i].time;
               y[i] = r.Data[i].close;
             }
-            my_graph.insertDataBlockNext(x,y,0);
-            callback();
+            graph.insertDataBlockNext(x,y,0);
+            callback(graph);
           }
         }
       }
@@ -149,10 +162,29 @@ var GamePlayScene = function(game, stage)
 
     if(purchases)
     {
-      for(var i = 0; i < purchases.length; i++)
+      if(purchases.ETH)
       {
-        purchases[i].ts = new Date(purchases[i].date);
-        purchases[i].ts = floor(purchases[i].ts/1000)+2*hr;
+        for(var i = 0; i < purchases.ETH.length; i++)
+        {
+          purchases.ETH[i].ts = new Date(purchases.ETH[i].date);
+          purchases.ETH[i].ts = floor(purchases.ETH[i].ts/1000)+2*hr;
+        }
+      }
+      if(purchases.BTC)
+      {
+        for(var i = 0; i < purchases.BTC.length; i++)
+        {
+          purchases.BTC[i].ts = new Date(purchases.BTC[i].date);
+          purchases.BTC[i].ts = floor(purchases.BTC[i].ts/1000)+2*hr;
+        }
+      }
+      if(purchases.LTC)
+      {
+        for(var i = 0; i < purchases.LTC.length; i++)
+        {
+          purchases.LTC[i].ts = new Date(purchases.LTC[i].date);
+          purchases.LTC[i].ts = floor(purchases.LTC[i].ts/1000)+2*hr;
+        }
       }
     }
 
@@ -227,15 +259,53 @@ var GamePlayScene = function(game, stage)
       };
     }
 
-    my_graph = new variable_graph();
-    my_graph.wx = 0;
-    my_graph.wy = -0.05;
-    my_graph.ww = cam.ww-0.1;
-    my_graph.wh = cam.wh-0.2;
-    screenSpace(cam,canv,my_graph);
-    my_graph.genCache();
+    eth_graph = new variable_graph();
+    eth_graph.coin = ETH;
+    eth_graph.wx = 0;
+    eth_graph.wy = -0.05;
+    eth_graph.ww = cam.ww-0.1;
+    eth_graph.wh = cam.wh-0.2;
+    screenSpace(cam,canv,eth_graph);
+    eth_graph.genCache();
+    eth_graph.total_owned = 0;
+    eth_graph.total_spent_val = 0;
+    eth_graph.total_owned_val = 0;
 
-    my_graph.hover = function(evt)
+    btc_graph = new variable_graph();
+    btc_graph.coin = BTC;
+    btc_graph.wx = 0;
+    btc_graph.wy = -0.05;
+    btc_graph.ww = cam.ww-0.1;
+    btc_graph.wh = cam.wh-0.2;
+    screenSpace(cam,canv,btc_graph);
+    btc_graph.genCache();
+    btc_graph.total_owned = 0;
+    btc_graph.total_spent_val = 0;
+    btc_graph.total_owned_val = 0;
+
+    ltc_graph = new variable_graph();
+    ltc_graph.coin = LTC;
+    ltc_graph.wx = 0;
+    ltc_graph.wy = -0.05;
+    ltc_graph.ww = cam.ww-0.1;
+    ltc_graph.wh = cam.wh-0.2;
+    screenSpace(cam,canv,ltc_graph);
+    ltc_graph.genCache();
+    ltc_graph.total_owned = 0;
+    ltc_graph.total_spent_val = 0;
+    ltc_graph.total_owned_val = 0;
+
+    my_graph = eth_graph;
+
+    graph_cover =
+    {
+      x:my_graph.x,
+      y:my_graph.y,
+      w:my_graph.w,
+      h:my_graph.h,
+    }
+
+    graph_cover.hover = function(evt)
     {
       var xt = (evt.doX-my_graph.x)/my_graph.w;
       var x = mapVal(0,1,my_graph.disp_min_xv,my_graph.disp_max_xv,xt);
@@ -244,18 +314,18 @@ var GamePlayScene = function(game, stage)
       hover_pos.x = evt.doX;
       hover_pos.y = evt.doY;
     }
-    my_graph.unhover = function(evt)
+    graph_cover.unhover = function(evt)
     {
       hover_yval = "";
       hover_xval = "";
     }
 
-    my_graph.dragStart = function(evt)
+    graph_cover.dragStart = function(evt)
     {
       var xt = (evt.doX-my_graph.x)/my_graph.w;
       drag_xval = mapVal(0,1,my_graph.disp_min_xv,my_graph.disp_max_xv,xt);
     }
-    my_graph.drag = function(evt)
+    graph_cover.drag = function(evt)
     {
       var xt = (evt.doX-my_graph.x)/my_graph.w;
       var new_drag_xval = mapVal(0,1,my_graph.disp_min_xv,my_graph.disp_max_xv,xt);
@@ -272,16 +342,23 @@ var GamePlayScene = function(game, stage)
       }
       limitGraph();
     }
-    my_graph.dragFinish = function(evt)
+    graph_cover.dragFinish = function(evt)
     {
 
     }
 
     var x = my_graph.x+140;
-    var y = my_graph.y-30;
+    var y = my_graph.y-60;
     var h = 20;
     var w = 50;
     var s = 10;
+    eth_btn = new ButtonBox(x,y,w,h,function(){ my_graph = eth_graph; my_graph.dirty = true; });
+    x += w+s;
+    btc_btn = new ButtonBox(x,y,w,h,function(){ my_graph = btc_graph; my_graph.dirty = true; });
+    x += w+s;
+    ltc_btn = new ButtonBox(x,y,w,h,function(){ my_graph = ltc_graph; my_graph.dirty = true; });
+    x = my_graph.x+140;
+    y = my_graph.y-30;
     hr_btn    = new ButtonBox(x,y,w,h,function(){ my_graph.disp_min_xv = my_graph.disp_max_xv-hr; limitGraph(); });
     x += w+s;
     day_btn   = new ButtonBox(x,y,w,h,function(){ my_graph.disp_min_xv = my_graph.disp_max_xv-day; limitGraph(); });
@@ -298,7 +375,7 @@ var GamePlayScene = function(game, stage)
       my_graph.disp_max_xv = my_graph.xv[my_graph.xv.length-1];
       my_graph.disp_min_xv = my_graph.disp_max_xv - delta;
       my_graph.dirty = true;
-      getDataBlock(BLOCK_MINUTE,block_n,function()
+      getDataBlock(BLOCK_MINUTE,my_graph.coin,my_graph,block_n,function()
       {
         delta = my_graph.disp_max_xv-my_graph.disp_min_xv;
         my_graph.disp_max_xv = my_graph.xv[my_graph.xv.length-1];
@@ -315,48 +392,54 @@ var GamePlayScene = function(game, stage)
       var to   = floor(my_graph.disp_max_xv);
       var n = 100;
       for(var i = 0; i < n; i++)
-        getDataPt(floor(lerp(from,to,i/n)),noop);
-      getDataPt(floor(to),function(){enhancing = false;});
+        getDataPt(floor(lerp(from,to,i/n)),my_graph,noop);
+      getDataPt(floor(to),my_graph,function(){enhancing = false;});
     });
 
-    var callback = function()
+    var callback = function(graph)
     {
-      my_graph.clampDisp();
-      my_graph.disp_min_xv = my_graph.disp_max_xv-day;
-      my_graph.disp_min_yv = 0;
-      my_graph.disp_max_yv *= 1.1;
+      graph.clampDisp();
+      graph.disp_min_xv = graph.disp_max_xv-day;
+      graph.disp_min_yv = 0;
+      graph.disp_max_yv *= 1.1;
 
-      if(purchases)
+      if(purchases && purchases[graph.coin])
       {
-        total_owned_eth = 0;
-        total_spent_val = 0;
-        total_owned_val = 0;
-        for(var i = 0; i < purchases.length; i++)
+        graph.total_owned = 0;
+        graph.total_spent_val = 0;
+        graph.total_owned_val = 0;
+        for(var i = 0; i < purchases[graph.coin].length; i++)
         {
-          total_owned_eth += purchases[i].amt;
-          total_spent_val += purchases[i].amt*my_graph.findqueryx(purchases[i].ts);
+          graph.total_owned += purchases[graph.coin][i].amt;
+          graph.total_spent_val += purchases[graph.coin][i].amt*graph.findqueryx(purchases[graph.coin][i].ts);
         }
       }
-      total_owned_val = my_graph.yv[my_graph.yv.length-1]*total_owned_eth;
+      graph.total_owned_val = graph.yv[graph.yv.length-1]*graph.total_owned;
       limitGraph();
     }
-    getDataBlock(BLOCK_MINUTE,block_n,callback);
-    getDataBlock(BLOCK_HOUR,block_n,callback);
-    getDataBlock(BLOCK_DAY,block_n,callback);
+    getDataBlock(BLOCK_MINUTE,ETH,eth_graph,block_n,callback);
+    getDataBlock(BLOCK_HOUR,  ETH,eth_graph,block_n,callback);
+    getDataBlock(BLOCK_DAY,   ETH,eth_graph,block_n,callback);
+    getDataBlock(BLOCK_MINUTE,BTC,btc_graph,block_n,callback);
+    getDataBlock(BLOCK_HOUR,  BTC,btc_graph,block_n,callback);
+    getDataBlock(BLOCK_DAY,   BTC,btc_graph,block_n,callback);
+    getDataBlock(BLOCK_MINUTE,LTC,ltc_graph,block_n,callback);
+    getDataBlock(BLOCK_HOUR,  LTC,ltc_graph,block_n,callback);
+    getDataBlock(BLOCK_DAY,   LTC,ltc_graph,block_n,callback);
 
-    total_owned_eth = 0;
-    total_spent_val = 0;
-    total_owned_val = 0;
     left_val = 0;
     right_val = 0;
   };
 
   self.tick = function()
   {
-    hoverer.filter(my_graph);
+    hoverer.filter(graph_cover);
     hoverer.flush();
-    dragger.filter(my_graph);
+    dragger.filter(graph_cover);
     dragger.flush();
+    clicker.filter(eth_btn);
+    clicker.filter(btc_btn);
+    clicker.filter(ltc_btn);
     clicker.filter(hr_btn);
     clicker.filter(day_btn);
     clicker.filter(week_btn);
@@ -384,7 +467,6 @@ var GamePlayScene = function(game, stage)
       //cur = right side
     if(my_graph.disp_max_xv == my_graph.xv[my_graph.xv.length-1])
     {
-      ctx.textAlign = "right";
       ctx.font = "24px Arial";
       ctx.fillText("$"+fdisp(my_graph.yv[my_graph.yv.length-1]), my_graph.x+my_graph.w, my_graph.y-20);
       load_latest_btn.w = 85;
@@ -405,7 +487,7 @@ var GamePlayScene = function(game, stage)
       load_latest_btn.y = my_graph.y-28-load_latest_btn.h;
     }
     ctx.font = "12px Arial";
-    ctx.fillText("$"+fdisp(left_val), my_graph.x+my_graph.w-90, my_graph.y-16);
+    ctx.fillText("$"+fdisp(left_val), my_graph.x+my_graph.w-100, my_graph.y-16);
     enhance_btn.w = 40;
     enhance_btn.x = my_graph.x+my_graph.w-90-enhance_btn.w;
     enhance_btn.h = 12;
@@ -414,12 +496,12 @@ var GamePlayScene = function(game, stage)
     if(p > 0)
     {
       ctx.fillStyle = green;
-      ctx.fillText("+$"+fdisp(delta)+" (+"+fdisp(p*100)+"%)", my_graph.x+my_graph.w-90, my_graph.y-30);
+      ctx.fillText("+$"+fdisp(delta)+" (+"+fdisp(p*100)+"%)", my_graph.x+my_graph.w-100, my_graph.y-30);
     }
     else
     {
       ctx.fillStyle = red;
-      ctx.fillText("-$"+fdisp(delta*-1)+" ("+fdisp(p*100)+"%)", my_graph.x+my_graph.w-90, my_graph.y-30);
+      ctx.fillText("-$"+fdisp(delta*-1)+" ("+fdisp(p*100)+"%)", my_graph.x+my_graph.w-100, my_graph.y-30);
     }
     ctx.fillStyle = black;
 
@@ -428,11 +510,11 @@ var GamePlayScene = function(game, stage)
     {
       var s = 20;
       ctx.font = s+"px Arial";
-      drawOutlinedText(cur_coin+" "+total_owned_eth, my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*3, 1, ctx);
-      drawOutlinedText("(@ $"+fdisp(total_spent_val/total_owned_eth)+")", my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*2, 1, ctx);
-      var delta = total_owned_val-total_spent_val;
-      var p = delta/total_spent_val;
-      drawOutlinedText("$"+fdisp(total_spent_val)+" -> $"+fdisp(total_owned_val), my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*1, 1, ctx);
+      drawOutlinedText(my_graph.coin+" "+my_graph.total_owned, my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*3, 1, ctx);
+      drawOutlinedText("(@ $"+fdisp(my_graph.total_spent_val/my_graph.total_owned)+")", my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*2, 1, ctx);
+      var delta = my_graph.total_owned_val-my_graph.total_spent_val;
+      var p = delta/my_graph.total_spent_val;
+      drawOutlinedText("$"+fdisp(my_graph.total_spent_val)+" -> $"+fdisp(my_graph.total_owned_val), my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*1, 1, ctx);
       if(delta > 0)
       {
         ctx.fillStyle = green;
@@ -527,14 +609,14 @@ var GamePlayScene = function(game, stage)
     //purchases
     ctx.strokeStyle = blue;
     ctx.lineWidth = 0.5;
-    if(purchases)
+    if(purchases && purchases[my_graph.coin])
     {
-      var closest_i = 0;
+      var closest_i = -1;
       var closest_x = 999999999;
       var closest_y = 0;
       var closest_val = 0;
 
-      val = total_spent_val/total_owned_eth;
+      val = my_graph.total_spent_val/my_graph.total_owned;
       y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, val);
       ctx.strokeStyle = green;
       ctx.lineWidth = 3;
@@ -546,10 +628,10 @@ var GamePlayScene = function(game, stage)
       ctx.stroke();
 
       ctx.lineWidth = 0.5;
-      for(var i = 0; i < purchases.length; i++)
+      for(var i = 0; i < purchases[my_graph.coin].length; i++)
       {
-        val = my_graph.findqueryx(purchases[i].ts);
-        x = mapVal(my_graph.disp_min_xv, my_graph.disp_max_xv, my_graph.x, my_graph.x+my_graph.w, purchases[i].ts);
+        val = my_graph.findqueryx(purchases[my_graph.coin][i].ts);
+        x = mapVal(my_graph.disp_min_xv, my_graph.disp_max_xv, my_graph.x, my_graph.x+my_graph.w, purchases[my_graph.coin][i].ts);
         y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, val);
         if(abs(x-hover_pos.x) < abs(closest_x-hover_pos.x))
         {
@@ -585,7 +667,7 @@ var GamePlayScene = function(game, stage)
         ctx.lineTo(x,y-arc_r*5);
         ctx.stroke();
       }
-      if(hover_xval)
+      if(hover_xval && closest_i >= 0)
       {
         x = closest_x;
         var xoff = 2;
@@ -598,9 +680,9 @@ var GamePlayScene = function(game, stage)
         val = closest_val;
         i = closest_i;
         ctx.fillStyle = black;
-        drawOutlinedText(cur_coin+" "+fdisp(purchases[i].amt)+" @ $"+fdisp(val), x+xoff,y+30, 1, ctx);
-        var spent = purchases[i].amt*val;
-        var have = purchases[i].amt*my_graph.yv[my_graph.yv.length-1];
+        drawOutlinedText(my_graph.coin+" "+fdisp(purchases[my_graph.coin][i].amt)+" @ $"+fdisp(val), x+xoff,y+30, 1, ctx);
+        var spent = purchases[my_graph.coin][i].amt*val;
+        var have = purchases[my_graph.coin][i].amt*my_graph.yv[my_graph.yv.length-1];
         var delta = have-spent;
         var p = delta/spent;
         drawOutlinedText("($"+fdisp(spent)+" -> $"+fdisp(have)+")", x+xoff,y+45, 1, ctx);
@@ -616,7 +698,7 @@ var GamePlayScene = function(game, stage)
         }
         ctx.fillStyle = black;
         ctx.strokeStyle = black;
-        drawOutlinedText(dateToString(new Date(purchases[i].ts*1000)),x+xoff,y+75, 1, ctx);
+        drawOutlinedText(dateToString(new Date(purchases[my_graph.coin][i].ts*1000)),x+xoff,y+75, 1, ctx);
         ctx.beginPath();
         ctx.arc(x,y,arc_r,0,twopi);
         ctx.stroke();
@@ -633,6 +715,9 @@ var GamePlayScene = function(game, stage)
     //buttons
     ctx.fillStyle = black;
     ctx.strokeStyle = black;
+    drawbtntitle(eth_btn,ETH);
+    drawbtntitle(btc_btn,BTC);
+    drawbtntitle(ltc_btn,LTC);
     drawbtntitle(hr_btn,"hr");
     drawbtntitle(day_btn,"day");
     drawbtntitle(week_btn,"week");
