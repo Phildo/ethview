@@ -196,6 +196,7 @@ var GamePlayScene = function(game, stage)
       self.cmd = false;
       self.key_down = function(evt)
       {
+        console.log(evt.keyCode);
         var delta;
         switch(evt.keyCode)
         {
@@ -222,6 +223,7 @@ var GamePlayScene = function(game, stage)
             limitGraph();
           break;
           case 91: //cmd
+          case 93: //cmd
             self.cmd = true;
           break;
           case 37: //left
@@ -253,6 +255,7 @@ var GamePlayScene = function(game, stage)
             limitGraph();
           break;
           case 91: //cmd
+          case 93: //cmd
             self.cmd = false;
           break;
         }
