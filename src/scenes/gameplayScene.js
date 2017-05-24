@@ -196,7 +196,6 @@ var GamePlayScene = function(game, stage)
       self.cmd = false;
       self.key_down = function(evt)
       {
-        console.log(evt.keyCode);
         var delta;
         switch(evt.keyCode)
         {
