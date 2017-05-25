@@ -86,6 +86,22 @@ var GamePlayScene = function(game, stage)
     ltc_graph.span = my_graph.span;
   }
 
+  var aggregatePurchases = function(graph)
+  {
+    graph.total_owned = 0;
+    graph.total_spent_val = 0;
+    graph.total_owned_val = 0;
+    if(purchases && purchases[graph.coin])
+    {
+      for(var i = 0; i < purchases[graph.coin].length; i++)
+      {
+        graph.total_owned += purchases[graph.coin][i].amt;
+        graph.total_spent_val += purchases[graph.coin][i].amt*graph.findqueryx(purchases[graph.coin][i].ts);
+      }
+    }
+    graph.total_owned_val = graph.yv[graph.yv.length-1]*graph.total_owned;
+  }
+
   var targetSelf = function()
   {
     target_disp_min_xv = my_graph.disp_min_xv;
@@ -459,6 +475,7 @@ var GamePlayScene = function(game, stage)
         target_disp_max_xv = my_graph.xv[my_graph.xv.length-1];
         target_disp_min_xv = my_graph.disp_max_xv - delta;
         target_disp_ttl = target_disp_max_ttl;
+        aggregatePurchases(my_graph);
         limitGraph();
         loading_latest = false;
       });
@@ -488,19 +505,7 @@ var GamePlayScene = function(game, stage)
       target_disp_min_yv = my_graph.disp_min_yv; //<- "my_graph" distinction important
       target_disp_max_yv = my_graph.disp_max_yv; //<- "my_graph" distinction important
 
-      if(purchases && purchases[graph.coin])
-      {
-        graph.total_owned = 0;
-        graph.total_spent_val = 0;
-        graph.total_owned_val = 0;
-        for(var i = 0; i < purchases[graph.coin].length; i++)
-        {
-          graph.total_owned += purchases[graph.coin][i].amt;
-          graph.total_spent_val += purchases[graph.coin][i].amt*graph.findqueryx(purchases[graph.coin][i].ts);
-        }
-      }
-      graph.total_owned_val = graph.yv[graph.yv.length-1]*graph.total_owned;
-
+      aggregatePurchases(graph);
       limitGraph();
     }
     getDataBlock(BLOCK_MINUTE,ETH,eth_graph,block_n,callback);
