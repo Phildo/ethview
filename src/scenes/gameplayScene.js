@@ -124,11 +124,11 @@ var GamePlayScene = function(game, stage)
 
     if(target_disp_max_xv > my_graph.xv[my_graph.xv.length-1])
     {
-      target_disp_min_xv -= my_graph.disp_max_xv-my_graph.xv[my_graph.xv.length-1];
+      target_disp_min_xv = my_graph.xv[my_graph.xv.length-1]-(my_graph.disp_max_xv-my_graph.disp_min_xv);
       target_disp_max_xv = my_graph.xv[my_graph.xv.length-1];
     }
-    if(target_disp_min_xv > my_graph.disp_max_xv-hr)   target_disp_min_xv = my_graph.disp_max_xv-hr;
-    if(target_disp_min_xv < my_graph.disp_max_xv-year) target_disp_min_xv = my_graph.disp_max_xv-year;
+    if(target_disp_min_xv > target_disp_max_xv-hr)   target_disp_min_xv = target_disp_max_xv-hr;
+    if(target_disp_min_xv < target_disp_max_xv-year) target_disp_min_xv = target_disp_max_xv-year;
 
     alignGraphs();
     my_graph.dirty = true;
@@ -316,14 +316,26 @@ var GamePlayScene = function(game, stage)
             delta = my_graph.disp_max_xv-my_graph.disp_min_xv;
             target_disp_min_xv -= delta;
             target_disp_max_xv -= delta;
-            target_disp_ttl = target_disp_ttl_max;
+            if(target_disp_min_xv < my_graph.xv[0])
+            {
+              delta = my_graph.xv[0] - target_disp_min_xv;
+              target_disp_min_xv += delta;
+              target_disp_max_xv += delta;
+            }
+            target_disp_ttl = target_disp_max_ttl;
             limitGraph();
           break;
           case 39: //right
             delta = my_graph.disp_max_xv-my_graph.disp_min_xv;
             target_disp_min_xv += delta;
             target_disp_max_xv += delta;
-            target_disp_ttl = target_disp_ttl_max;
+            if(target_disp_max_xv > my_graph.xv[my_graph.xv.length-1])
+            {
+              delta = target_disp_max_xv - my_graph.xv[my_graph.xv.length-1];
+              target_disp_min_xv -= delta;
+              target_disp_max_xv -= delta;
+            }
+            target_disp_ttl = target_disp_max_ttl;
             limitGraph();
           break;
         }
