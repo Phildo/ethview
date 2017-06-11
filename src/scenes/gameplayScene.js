@@ -96,7 +96,7 @@ var GamePlayScene = function(game, stage)
       for(var i = 0; i < purchases[graph.coin].length; i++)
       {
         graph.total_owned += purchases[graph.coin][i].amt;
-        graph.total_spent_val += purchases[graph.coin][i].amt*graph.findqueryx(purchases[graph.coin][i].ts);
+        graph.total_spent_val += purchases[graph.coin][i].spent;
       }
     }
     graph.total_owned_val = graph.yv[graph.yv.length-1]*graph.total_owned;
@@ -270,6 +270,7 @@ var GamePlayScene = function(game, stage)
         {
           purchases.ETH[i].ts = new Date(purchases.ETH[i].date);
           purchases.ETH[i].ts = floor(purchases.ETH[i].ts/1000)+2*hr;
+          purchases.ETH[i].rate = purchases.ETH[i].spent/purchases.ETH[i].amt;
         }
       }
       if(purchases.BTC)
@@ -278,6 +279,7 @@ var GamePlayScene = function(game, stage)
         {
           purchases.BTC[i].ts = new Date(purchases.BTC[i].date);
           purchases.BTC[i].ts = floor(purchases.BTC[i].ts/1000)+2*hr;
+          purchases.BTC[i].rate = purchases.BTC[i].spent/purchases.BTC[i].amt;
         }
       }
       if(purchases.LTC)
@@ -286,6 +288,7 @@ var GamePlayScene = function(game, stage)
         {
           purchases.LTC[i].ts = new Date(purchases.LTC[i].date);
           purchases.LTC[i].ts = floor(purchases.LTC[i].ts/1000)+2*hr;
+          purchases.LTC[i].rate = purchases.LTC[i].spent/purchases.LTC[i].amt;
         }
       }
     }
@@ -758,7 +761,7 @@ var GamePlayScene = function(game, stage)
       ctx.lineWidth = 0.5;
       for(var i = 0; i < purchases[my_graph.coin].length; i++)
       {
-        val = my_graph.findqueryx(purchases[my_graph.coin][i].ts);
+        val = purchases[my_graph.coin][i].rate;
         x = mapVal(my_graph.disp_min_xv, my_graph.disp_max_xv, my_graph.x, my_graph.x+my_graph.w, purchases[my_graph.coin][i].ts);
         y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, val);
         if(abs(x-hover_pos.x) < abs(closest_x-hover_pos.x))
@@ -809,7 +812,7 @@ var GamePlayScene = function(game, stage)
         i = closest_i;
         ctx.fillStyle = black;
         drawOutlinedText(my_graph.coin+" "+fdisp(purchases[my_graph.coin][i].amt)+" @ $"+fdisp(val), x+xoff,y+30, 1, ctx);
-        var spent = purchases[my_graph.coin][i].amt*val;
+        var spent = purchases[my_graph.coin][i].spent;
         var have = purchases[my_graph.coin][i].amt*my_graph.yv[my_graph.yv.length-1];
         var delta = have-spent;
         var p = delta/spent;
