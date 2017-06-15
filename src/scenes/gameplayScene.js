@@ -608,6 +608,8 @@ var GamePlayScene = function(game, stage)
     var delta = span_delta;
     var p = span_delta_p;
     var arc_r = 5;
+    var val;
+    var amt;
 
     my_graph.draw(ctx);
 
@@ -665,21 +667,32 @@ var GamePlayScene = function(game, stage)
     if(keys.cmd)
     {
       var s = 20;
+      var x;
+      if(left_val < right_val)
+      {
+        x = my_graph.x+my_graph.w-10;
+        ctx.textAlign = "right";
+      }
+      else
+      {
+        x = my_graph.x+10;
+        ctx.textAlign = "left";
+      }
       ctx.font = s+"px Arial";
-      drawOutlinedText(my_graph.coin+" "+my_graph.total_owned, my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*3, 1, ctx);
-      drawOutlinedText("(@ $"+fdisp(my_graph.total_spent_val/my_graph.total_owned)+")", my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*2, 1, ctx);
+      drawOutlinedText(my_graph.coin+" "+my_graph.total_owned, x, my_graph.y+my_graph.h-10-s*3, 1, ctx);
+      drawOutlinedText("(@ $"+fdisp(my_graph.total_spent_val/my_graph.total_owned)+")", x, my_graph.y+my_graph.h-10-s*2, 1, ctx);
       var delta = my_graph.total_owned_val-my_graph.total_spent_val;
       var p = delta/my_graph.total_spent_val;
-      drawOutlinedText("$"+fdisp(my_graph.total_spent_val)+" -> $"+fdisp(my_graph.total_owned_val), my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*1, 1, ctx);
+      drawOutlinedText("$"+fdisp(my_graph.total_spent_val)+" -> $"+fdisp(my_graph.total_owned_val), x, my_graph.y+my_graph.h-10-s*1, 1, ctx);
       if(delta > 0)
       {
         ctx.fillStyle = green;
-        drawOutlinedText("+$"+fdisp(delta)+" (+"+fdisp(p*100)+"%)", my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*0, 1, ctx);
+        drawOutlinedText("+$"+fdisp(delta)+" (+"+fdisp(p*100)+"%)", x, my_graph.y+my_graph.h-10-s*0, 1, ctx);
       }
       else
       {
         ctx.fillStyle = red;
-        drawOutlinedText("-$"+fdisp(delta*-1)+" ("+fdisp(p*100)+"%)", my_graph.x+my_graph.w-10, my_graph.y+my_graph.h-10-s*0, 1, ctx);
+        drawOutlinedText("-$"+fdisp(delta*-1)+" ("+fdisp(p*100)+"%)", x, my_graph.y+my_graph.h-10-s*0, 1, ctx);
       }
     }
 
@@ -775,6 +788,7 @@ var GamePlayScene = function(game, stage)
       val = my_graph.total_spent_val/my_graph.total_owned;
       y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, val);
       ctx.strokeStyle = green;
+      ctx.strokeStyle = red;
       ctx.lineWidth = 3;
       ctx.beginPath();
       ctx.moveTo(my_graph.x-arc_r*2,y);
@@ -787,6 +801,11 @@ var GamePlayScene = function(game, stage)
       for(var i = 0; i < purchases[my_graph.coin].length; i++)
       {
         val = purchases[my_graph.coin][i].rate;
+        amt = purchases[my_graph.coin][i].amt;
+
+        if(amt < 0) ctx.strokeStyle = red;
+        else        ctx.strokeStyle = green;
+
         x = mapVal(my_graph.disp_min_xv, my_graph.disp_max_xv, my_graph.x, my_graph.x+my_graph.w, purchases[my_graph.coin][i].ts);
         y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, val);
         if(abs(x-hover_pos.x) < abs(closest_x-hover_pos.x))
