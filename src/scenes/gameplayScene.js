@@ -47,10 +47,16 @@ var GamePlayScene = function(game, stage)
   var day_btn;
   var week_btn;
   var month_btn;
+  var cmd_btn;
+  var alt_btn;
+  var show_btn;
+  var left_btn;
+  var right_btn;
   var load_latest_btn;
   var enhance_btn;
 
   var keys;
+  var show_purchases = false;
 
   var hover_xval;
   var hover_yval;
@@ -365,9 +371,9 @@ var GamePlayScene = function(game, stage)
     eth_graph = new variable_graph();
     eth_graph.coin = ETH;
     eth_graph.wx = 0;
-    eth_graph.wy = -0.05;
+    eth_graph.wy = -0.10;
     eth_graph.ww = cam.ww-0.1;
-    eth_graph.wh = cam.wh-0.2;
+    eth_graph.wh = cam.wh-0.3;
     screenSpace(cam,canv,eth_graph);
     eth_graph.genCache();
     eth_graph.total_owned = 0;
@@ -376,10 +382,10 @@ var GamePlayScene = function(game, stage)
 
     btc_graph = new variable_graph();
     btc_graph.coin = BTC;
-    btc_graph.wx = 0;
-    btc_graph.wy = -0.05;
-    btc_graph.ww = cam.ww-0.1;
-    btc_graph.wh = cam.wh-0.2;
+    btc_graph.wx = eth_graph.wx;
+    btc_graph.wy = eth_graph.wy;
+    btc_graph.ww = eth_graph.ww;
+    btc_graph.wh = eth_graph.wh;
     screenSpace(cam,canv,btc_graph);
     btc_graph.genCache();
     btc_graph.total_owned = 0;
@@ -388,10 +394,10 @@ var GamePlayScene = function(game, stage)
 
     ltc_graph = new variable_graph();
     ltc_graph.coin = LTC;
-    ltc_graph.wx = 0;
-    ltc_graph.wy = -0.05;
-    ltc_graph.ww = cam.ww-0.1;
-    ltc_graph.wh = cam.wh-0.2;
+    ltc_graph.wx = eth_graph.wx;
+    ltc_graph.wy = eth_graph.wy;
+    ltc_graph.ww = eth_graph.ww;
+    ltc_graph.wh = eth_graph.wh;
     screenSpace(cam,canv,ltc_graph);
     ltc_graph.genCache();
     ltc_graph.total_owned = 0;
@@ -455,17 +461,20 @@ var GamePlayScene = function(game, stage)
     }
 
     var x = my_graph.x+140;
-    var y = my_graph.y-60;
-    var h = 20;
+    var h = 40;
     var w = 50;
     var s = 10;
+    var y = my_graph.y-(s+h)*2;
     eth_btn = new ButtonBox(x,y,w,h,function(){ my_graph = eth_graph; if(keys.alt) stretchGraph(); else normalizeGraph(); my_graph.dirty = true; });
     x += w+s;
     btc_btn = new ButtonBox(x,y,w,h,function(){ my_graph = btc_graph; if(keys.alt) stretchGraph(); else normalizeGraph(); my_graph.dirty = true; });
     x += w+s;
     ltc_btn = new ButtonBox(x,y,w,h,function(){ my_graph = ltc_graph; if(keys.alt) stretchGraph(); else normalizeGraph(); my_graph.dirty = true; });
+    x += w+s;
+    show_btn = new ButtonBox(x,y,w,h,function(){ show_purchases = !show_purchases; });
+    x += w+s*3;
     x = my_graph.x+140;
-    y = my_graph.y-30;
+    y = my_graph.y-(s+h);
     hr_btn    = new ButtonBox(x,y,w,h,function(){ target_disp_min_xv = my_graph.disp_max_xv-hr; target_disp_ttl = target_disp_max_ttl; my_graph.span = HR; limitGraph(); });
     x += w+s;
     day_btn   = new ButtonBox(x,y,w,h,function(){ target_disp_min_xv = my_graph.disp_max_xv-day; target_disp_ttl = target_disp_max_ttl; my_graph.span = DAY; limitGraph(); });
@@ -473,6 +482,17 @@ var GamePlayScene = function(game, stage)
     week_btn  = new ButtonBox(x,y,w,h,function(){ target_disp_min_xv = my_graph.disp_max_xv-week; target_disp_ttl = target_disp_max_ttl; my_graph.span = WEEK; limitGraph(); });
     x += w+s;
     month_btn = new ButtonBox(x,y,w,h,function(){ target_disp_min_xv = my_graph.disp_max_xv-month; target_disp_ttl = target_disp_max_ttl; my_graph.span = MONTH; limitGraph(); });
+    x += w+s*3;
+    x = my_graph.x;
+    y = my_graph.y-(s+h)*2;
+    cmd_btn  = new ButtonBox(x,y,w,h,function(){ keys.cmd = !keys.cmd; });
+    x += w+s;
+    alt_btn = new ButtonBox(x,y,w,h,function(){ keys.alt = !keys.alt; if(keys.alt) stretchGraph(); else normalizeGraph(); });
+    x += w+s*3;
+    x = my_graph.x+my_graph.w-w-s-w
+    left_btn  = new ButtonBox(x,y,w,h,function(){ keys.key_down({keyCode:37}); });
+    x += w+s;
+    right_btn = new ButtonBox(x,y,w,h,function(){ keys.key_down({keyCode:39}); });
     x += w+s*3;
     load_latest_btn = new ButtonBox(x,y,w,h,function()
     {
@@ -548,6 +568,11 @@ var GamePlayScene = function(game, stage)
     clicker.filter(day_btn);
     clicker.filter(week_btn);
     clicker.filter(month_btn);
+    clicker.filter(cmd_btn);
+    clicker.filter(alt_btn);
+    clicker.filter(show_btn);
+    clicker.filter(left_btn);
+    clicker.filter(right_btn);
     clicker.filter(load_latest_btn);
     clicker.filter(enhance_btn);
     clicker.flush();
@@ -740,7 +765,7 @@ var GamePlayScene = function(game, stage)
     //purchases
     ctx.strokeStyle = blue;
     ctx.lineWidth = 0.5;
-    if(purchases && purchases[my_graph.coin])
+    if(purchases && purchases[my_graph.coin] && show_purchases)
     {
       var closest_i = -1;
       var closest_x = 999999999;
@@ -852,6 +877,11 @@ var GamePlayScene = function(game, stage)
     drawbtntitle(day_btn,"day",my_graph.span == DAY);
     drawbtntitle(week_btn,"week",my_graph.span == WEEK);
     drawbtntitle(month_btn,"month",my_graph.span == MONTH);
+    //drawbtntitle(cmd_btn,"cmd",keys.cmd);
+    //drawbtntitle(alt_btn,"alt",keys.alt);
+    //drawbtntitle(show_btn,"show",show_purchases);
+    drawbtntitle(left_btn,"left",false);
+    drawbtntitle(right_btn,"right",false);
     if(loading_latest) drawbtntitle(load_latest_btn,"");
     if(enhancing)      drawbtntitle(enhance_btn,"");
   };
