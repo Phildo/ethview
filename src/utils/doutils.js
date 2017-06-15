@@ -28,8 +28,9 @@ function doSetPosOnEvent(evt)
     var body = document.body;
     var docEl = document.documentElement;
 
-    var scrollTop = window.pageYOffset || docEl.scrollTop || body.scrollTop;
-    var scrollLeft = window.pageXOffset || docEl.scrollLeft || body.scrollLeft;
+    //why did I think this was necessary?
+    var scrollTop = 0;//window.pageYOffset || docEl.scrollTop || body.scrollTop;
+    var scrollLeft = 0;//window.pageXOffset || docEl.scrollLeft || body.scrollLeft;
 
     var clientTop = docEl.clientTop || body.clientTop || 0;
     var clientLeft = docEl.clientLeft || body.clientLeft || 0;
@@ -39,7 +40,6 @@ function doSetPosOnEvent(evt)
 
     evt.doX = evt.touches[0].pageX-left;
     evt.doY = evt.touches[0].pageY-top;
-
   }
   else if(evt.layerX != undefined && evt.originalTarget != undefined)
   {
