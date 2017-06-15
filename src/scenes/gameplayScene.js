@@ -278,6 +278,19 @@ var GamePlayScene = function(game, stage)
           purchases.ETH[i].ts = floor(purchases.ETH[i].ts/1000)+2*hr;
           purchases.ETH[i].rate = purchases.ETH[i].spent/purchases.ETH[i].amt;
         }
+        for(var i = 0; i < purchases.ETH.length-1; i++)
+        {
+          if(
+            abs(purchases.ETH[i].ts-purchases.ETH[i+1].ts) < min &&
+            abs(purchases.ETH[i].rate-purchases.ETH[i+1].rate) < 0.01
+            )
+          {
+            purchases.ETH[i].amt += purchases.ETH[i+1].amt;
+            purchases.ETH[i].spent += purchases.ETH[i+1].spent;
+            purchases.ETH.splice(i+1,1);
+            i--
+          }
+        }
       }
       if(purchases.BTC)
       {
@@ -287,6 +300,19 @@ var GamePlayScene = function(game, stage)
           purchases.BTC[i].ts = floor(purchases.BTC[i].ts/1000)+2*hr;
           purchases.BTC[i].rate = purchases.BTC[i].spent/purchases.BTC[i].amt;
         }
+        for(var i = 0; i < purchases.BTC.length-1; i++)
+        {
+          if(
+            abs(purchases.BTC[i].ts-purchases.BTC[i+1].ts) < min &&
+            abs(purchases.BTC[i].rate-purchases.BTC[i+1].rate) < 0.01
+            )
+          {
+            purchases.BTC[i].amt += purchases.BTC[i+1].amt;
+            purchases.BTC[i].spent += purchases.BTC[i+1].spent;
+            purchases.BTC.splice(i+1,1);
+            i--
+          }
+        }
       }
       if(purchases.LTC)
       {
@@ -295,6 +321,19 @@ var GamePlayScene = function(game, stage)
           purchases.LTC[i].ts = new Date(purchases.LTC[i].date);
           purchases.LTC[i].ts = floor(purchases.LTC[i].ts/1000)+2*hr;
           purchases.LTC[i].rate = purchases.LTC[i].spent/purchases.LTC[i].amt;
+        }
+        for(var i = 0; i < purchases.LTC.length-1; i++)
+        {
+          if(
+            abs(purchases.LTC[i].ts-purchases.LTC[i+1].ts) < min &&
+            abs(purchases.LTC[i].rate-purchases.LTC[i+1].rate) < 0.01
+            )
+          {
+            purchases.LTC[i].amt += purchases.LTC[i+1].amt;
+            purchases.LTC[i].spent += purchases.LTC[i+1].spent;
+            purchases.LTC.splice(i+1,1);
+            i--
+          }
         }
       }
     }
