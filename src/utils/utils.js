@@ -857,8 +857,6 @@ var variable_graph = function()
       if(y[j] > self.known_max_yv) self.known_max_yv = y[j];
 
       i = self.nextibeforex(x[j],i)+1;
-      self.xv.splice(i,0,x[j]);
-      self.yv.splice(i,0,y[j]);
 
       if(self.xv[i] == x[j])
         self.yv[i] = y[j];

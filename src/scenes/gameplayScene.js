@@ -50,6 +50,7 @@ var GamePlayScene = function(game, stage)
   var cmd_btn;
   var alt_btn;
   var show_btn;
+  var auto_btn;
   var left_btn;
   var right_btn;
   var load_latest_btn;
@@ -57,6 +58,9 @@ var GamePlayScene = function(game, stage)
 
   var keys;
   var show_purchases = false;
+  var auto_purchases = false;
+  var auto_max_countdown = 30*60;
+  var auto_countdown = auto_max_countdown;
 
   var hover_xval;
   var hover_yval;
@@ -528,7 +532,10 @@ var GamePlayScene = function(game, stage)
     x += w+s;
     alt_btn = new ButtonBox(x,y,w,h,function(){ keys.alt = !keys.alt; if(keys.alt) stretchGraph(); else normalizeGraph(); });
     x += w+s*3;
-    x = my_graph.x+my_graph.w-w-s-w
+    x = my_graph.x+my_graph.w-(w+(s+w)*2);
+    console.log(x);
+    auto_btn = new ButtonBox(x,y,w,h,function(){ auto_purchases = !auto_purchases; });
+    x += w+s;
     left_btn  = new ButtonBox(x,y,w,h,function(){ keys.key_down({keyCode:37}); });
     x += w+s;
     right_btn = new ButtonBox(x,y,w,h,function(){ keys.key_down({keyCode:39}); });
@@ -552,6 +559,7 @@ var GamePlayScene = function(game, stage)
         aggregatePurchases(my_graph);
         limitGraph();
         loading_latest = false;
+        console.log(my_graph.xv.length);
       });
     });
     x += w+s;
@@ -610,6 +618,7 @@ var GamePlayScene = function(game, stage)
     clicker.filter(cmd_btn);
     clicker.filter(alt_btn);
     clicker.filter(show_btn);
+    clicker.filter(auto_btn);
     clicker.filter(left_btn);
     clicker.filter(right_btn);
     clicker.filter(load_latest_btn);
@@ -639,6 +648,16 @@ var GamePlayScene = function(game, stage)
       my_graph.disp_max_xv = target_disp_max_xv;
       my_graph.disp_min_yv = target_disp_min_yv;
       my_graph.disp_max_yv = target_disp_max_yv;
+    }
+
+    if(auto_purchases)
+    {
+      auto_countdown--;
+      if(auto_countdown <= 0)
+      {
+        auto_countdown = auto_max_countdown;
+        load_latest_btn.click({});
+      }
     }
   };
 
@@ -936,8 +955,9 @@ var GamePlayScene = function(game, stage)
     drawbtntitle(week_btn,"week",my_graph.span == WEEK);
     drawbtntitle(month_btn,"month",my_graph.span == MONTH);
     //drawbtntitle(cmd_btn,"cmd",keys.cmd);
-    //drawbtntitle(alt_btn,"alt",keys.alt);
+    drawbtntitle(alt_btn,"alt",keys.alt);
     //drawbtntitle(show_btn,"show",show_purchases);
+    drawbtntitle(auto_btn,"auto",auto_purchases);
     drawbtntitle(left_btn,"left",false);
     drawbtntitle(right_btn,"right",false);
     if(loading_latest) drawbtntitle(load_latest_btn,"");
