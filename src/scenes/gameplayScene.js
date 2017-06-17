@@ -957,7 +957,12 @@ var GamePlayScene = function(game, stage)
     //drawbtntitle(cmd_btn,"cmd",keys.cmd);
     drawbtntitle(alt_btn,"alt",keys.alt);
     //drawbtntitle(show_btn,"show",show_purchases);
-    drawbtntitle(auto_btn,"auto",auto_purchases);
+    if(auto_purchases)
+    {
+      ctx.fillStyle = blue;
+      ctx.fillRect(auto_btn.x,auto_btn.y,auto_btn.w*(auto_countdown/auto_max_countdown),auto_btn.h);
+    }
+    drawbtntitle(auto_btn,"auto",false);
     drawbtntitle(left_btn,"left",false);
     drawbtntitle(right_btn,"right",false);
     if(loading_latest) drawbtntitle(load_latest_btn,"");
