@@ -533,7 +533,6 @@ var GamePlayScene = function(game, stage)
     alt_btn = new ButtonBox(x,y,w,h,function(){ keys.alt = !keys.alt; if(keys.alt) stretchGraph(); else normalizeGraph(); });
     x += w+s*3;
     x = my_graph.x+my_graph.w-(w+(s+w)*2);
-    console.log(x);
     auto_btn = new ButtonBox(x,y,w,h,function(){ auto_purchases = !auto_purchases; });
     x += w+s;
     left_btn  = new ButtonBox(x,y,w,h,function(){ keys.key_down({keyCode:37}); });
@@ -559,7 +558,6 @@ var GamePlayScene = function(game, stage)
         aggregatePurchases(my_graph);
         limitGraph();
         loading_latest = false;
-        console.log(my_graph.xv.length);
       });
     });
     x += w+s;
