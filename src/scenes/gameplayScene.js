@@ -284,13 +284,11 @@ var GamePlayScene = function(game, stage)
         }
         for(var i = 0; i < purchases.ETH.length-1; i++)
         {
-          if(
-            abs(purchases.ETH[i].ts-purchases.ETH[i+1].ts) < min &&
-            abs(purchases.ETH[i].rate-purchases.ETH[i+1].rate) < 0.01
-            )
+          if(abs(purchases.ETH[i].ts-purchases.ETH[i+1].ts) < 2*min)
           {
             purchases.ETH[i].amt += purchases.ETH[i+1].amt;
             purchases.ETH[i].spent += purchases.ETH[i+1].spent;
+            purchases.ETH[i].rate = purchases.ETH[i].spent/purchases.ETH[i].amt;
             purchases.ETH.splice(i+1,1);
             i--
           }
@@ -306,13 +304,11 @@ var GamePlayScene = function(game, stage)
         }
         for(var i = 0; i < purchases.BTC.length-1; i++)
         {
-          if(
-            abs(purchases.BTC[i].ts-purchases.BTC[i+1].ts) < min &&
-            abs(purchases.BTC[i].rate-purchases.BTC[i+1].rate) < 0.01
-            )
+          if(abs(purchases.BTC[i].ts-purchases.BTC[i+1].ts) < 2*min)
           {
             purchases.BTC[i].amt += purchases.BTC[i+1].amt;
             purchases.BTC[i].spent += purchases.BTC[i+1].spent;
+            purchases.BTC[i].rate = purchases.BTC[i].spent/purchases.BTC[i].amt;
             purchases.BTC.splice(i+1,1);
             i--
           }
@@ -328,13 +324,11 @@ var GamePlayScene = function(game, stage)
         }
         for(var i = 0; i < purchases.LTC.length-1; i++)
         {
-          if(
-            abs(purchases.LTC[i].ts-purchases.LTC[i+1].ts) < min &&
-            abs(purchases.LTC[i].rate-purchases.LTC[i+1].rate) < 0.01
-            )
+          if(abs(purchases.LTC[i].ts-purchases.LTC[i+1].ts) < 2*min)
           {
             purchases.LTC[i].amt += purchases.LTC[i+1].amt;
             purchases.LTC[i].spent += purchases.LTC[i+1].spent;
+            purchases.LTC[i].rate = purchases.LTC[i].spent/purchases.LTC[i].amt;
             purchases.LTC.splice(i+1,1);
             i--
           }
