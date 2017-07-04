@@ -150,7 +150,7 @@ var GamePlayScene = function(game, stage)
     var lowest = my_graph.yv[index];
     var highest = my_graph.yv[index];
     var val;
-    for(var i = 0; i < my_graph.w; i++)
+    for(var i = 0; i <= my_graph.w; i++)
     {
       val = my_graph.nextqueryxt(i/my_graph.w,index);
       if(val < lowest)  lowest  = val;
