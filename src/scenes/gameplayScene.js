@@ -25,6 +25,8 @@ var GamePlayScene = function(game, stage)
   var blue = "#004488";
   var black = "#000000";
   var white = "#FFFFFF";
+  var lr_grad;
+  var rl_grad;
 
   var appname = "coinview";
   var ETH = "ETH";
@@ -443,6 +445,13 @@ var GamePlayScene = function(game, stage)
 
     my_graph = eth_graph;
 
+    lr_grad= ctx.createLinearGradient(my_graph.x, 0, my_graph.x+my_graph.w, 0);
+    lr_grad.addColorStop(0, "black");
+    lr_grad.addColorStop(1, "white");
+    rl_grad= ctx.createLinearGradient(my_graph.x, 0, my_graph.x+my_graph.w, 0);
+    rl_grad.addColorStop(0, "white");
+    rl_grad.addColorStop(1, "black");
+
     graph_cover =
     {
       x:my_graph.x,
@@ -813,14 +822,19 @@ var GamePlayScene = function(game, stage)
     */
 
     //window start/end (y) delim
-    ctx.beginPath();
       //start
     y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, left_val);
+    ctx.strokeStyle = lr_grad;
+    ctx.beginPath();
     ctx.moveTo(my_graph.x           ,y);
     ctx.lineTo(my_graph.x+my_graph.w,y);
+    ctx.stroke();
+
       //end
-    val = my_graph.findqueryx(my_graph.disp_max_xv);
+    //val = my_graph.findqueryx(my_graph.disp_max_xv);
     y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, right_val);
+    ctx.strokeStyle = rl_grad;
+    ctx.beginPath();
     ctx.moveTo(my_graph.x           ,y);
     ctx.lineTo(my_graph.x+my_graph.w,y);
     ctx.stroke();
