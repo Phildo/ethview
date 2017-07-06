@@ -286,7 +286,7 @@ var GamePlayScene = function(game, stage)
         }
         for(var i = 0; i < purchases.ETH.length-1; i++)
         {
-          if(abs(purchases.ETH[i].ts-purchases.ETH[i+1].ts) < 2*min)
+          if(abs(purchases.ETH[i].ts-purchases.ETH[i+1].ts) < 10*min)
           {
             purchases.ETH[i].amt += purchases.ETH[i+1].amt;
             purchases.ETH[i].spent += purchases.ETH[i+1].spent;
@@ -306,7 +306,7 @@ var GamePlayScene = function(game, stage)
         }
         for(var i = 0; i < purchases.BTC.length-1; i++)
         {
-          if(abs(purchases.BTC[i].ts-purchases.BTC[i+1].ts) < 2*min)
+          if(abs(purchases.BTC[i].ts-purchases.BTC[i+1].ts) < 10*min)
           {
             purchases.BTC[i].amt += purchases.BTC[i+1].amt;
             purchases.BTC[i].spent += purchases.BTC[i+1].spent;
@@ -326,7 +326,7 @@ var GamePlayScene = function(game, stage)
         }
         for(var i = 0; i < purchases.LTC.length-1; i++)
         {
-          if(abs(purchases.LTC[i].ts-purchases.LTC[i+1].ts) < 2*min)
+          if(abs(purchases.LTC[i].ts-purchases.LTC[i+1].ts) < 10*min)
           {
             purchases.LTC[i].amt += purchases.LTC[i+1].amt;
             purchases.LTC[i].spent += purchases.LTC[i+1].spent;
