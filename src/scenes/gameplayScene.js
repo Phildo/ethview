@@ -824,19 +824,29 @@ var GamePlayScene = function(game, stage)
     //window start/end (y) delim
       //start
     y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, left_val);
+    ctx.strokeStyle = black;
+    ctx.beginPath();
+    ctx.moveTo(my_graph.x             ,y);
+    ctx.lineTo(my_graph.x+my_graph.w/2,y);
+    ctx.stroke();
     ctx.strokeStyle = lr_grad;
     ctx.beginPath();
-    ctx.moveTo(my_graph.x           ,y);
-    ctx.lineTo(my_graph.x+my_graph.w,y);
+    ctx.moveTo(my_graph.x+my_graph.w/2,y);
+    ctx.lineTo(my_graph.x+my_graph.w  ,y);
     ctx.stroke();
 
       //end
     //val = my_graph.findqueryx(my_graph.disp_max_xv);
     y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, right_val);
+    ctx.strokeStyle = black;
+    ctx.beginPath();
+    ctx.moveTo(my_graph.x+my_graph.w/2,y);
+    ctx.lineTo(my_graph.x+my_graph.w  ,y);
+    ctx.stroke();
     ctx.strokeStyle = rl_grad;
     ctx.beginPath();
-    ctx.moveTo(my_graph.x           ,y);
-    ctx.lineTo(my_graph.x+my_graph.w,y);
+    ctx.moveTo(my_graph.x             ,y);
+    ctx.lineTo(my_graph.x+my_graph.w/2,y);
     ctx.stroke();
 
     //purchases
