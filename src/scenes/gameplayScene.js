@@ -1,3 +1,4 @@
+  var eth_pressure_graph;
 var GamePlayScene = function(game, stage)
 {
   var self = this;
@@ -39,7 +40,7 @@ var GamePlayScene = function(game, stage)
   var eth_graph;
   var btc_graph;
   var ltc_graph;
-  var eth_pressure_graph;
+  //var eth_pressure_graph;
   var my_graph;
   var graph_cover;
 
@@ -94,9 +95,12 @@ var GamePlayScene = function(game, stage)
     btc_graph.disp_max_xv = my_graph.disp_max_xv;
     ltc_graph.disp_min_xv = my_graph.disp_min_xv;
     ltc_graph.disp_max_xv = my_graph.disp_max_xv;
+    eth_pressure_graph.disp_min_xv = my_graph.disp_min_xv;
+    eth_pressure_graph.disp_max_xv = my_graph.disp_max_xv;
     eth_graph.span = my_graph.span;
     btc_graph.span = my_graph.span;
     ltc_graph.span = my_graph.span;
+    eth_pressure_graph.span = my_graph.span;
   }
 
   var aggregatePurchases = function(graph)
@@ -477,7 +481,7 @@ var GamePlayScene = function(game, stage)
     ltc_graph.total_spent_val = 0;
     ltc_graph.total_owned_val = 0;
 
-    eth_pressure_graph = new variable_graph();
+    eth_pressure_graph = new running_deriv_variable_graph();
     eth_pressure_graph.coin = ETH;
     eth_pressure_graph.wx = 0;
     eth_pressure_graph.wy = -0.10;
