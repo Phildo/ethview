@@ -39,6 +39,7 @@ var GamePlayScene = function(game, stage)
   var eth_graph;
   var btc_graph;
   var ltc_graph;
+  var eth_pressure_graph;
   var my_graph;
   var graph_cover;
 
@@ -199,7 +200,7 @@ var GamePlayScene = function(game, stage)
           var r = JSON.parse(xhr.responseText);
           if(r && r[from] && r[from][to])
           {
-            graph.insertDataNext(ts,r[from][to],0);
+            graph.insertDataNext(ts,r[from][to],0,3);
             callback();
           }
         }
@@ -216,11 +217,12 @@ var GamePlayScene = function(game, stage)
   var getDataBlock = function(block,coin,graph,n,callback)
   {
     var span = "day";
+    var priority = 3;
     switch(block)
     {
-      case BLOCK_DAY:    span = "day";    break;
-      case BLOCK_MINUTE: span = "minute"; break;
-      case BLOCK_HOUR:   span = "hour";   break;
+      case BLOCK_DAY:    span = "day";    priority = 2; break;
+      case BLOCK_HOUR:   span = "hour";   priority = 1; break;
+      case BLOCK_MINUTE: span = "minute"; priority = 0; break;
     }
 
     var from = coin;
@@ -243,13 +245,45 @@ var GamePlayScene = function(game, stage)
               x[i] = r.Data[i].time;
               y[i] = r.Data[i].close;
             }
-            graph.insertDataBlockNext(x,y,0);
+            graph.insertDataBlockNext(x,y,0,priority);
             callback(graph);
           }
         }
       }
     }
     xhr.open("GET","https://min-api.cryptocompare.com/data/histo"+span+"?fsym="+from+"&tsym="+to+"&limit="+n+"&aggregate=1&extraParams="+appname,true);
+    xhr.send();
+  }
+
+  var getPressureDataBlock = function(page,coin,graph,callback)
+  {
+    var xhr = new XMLHttpRequest();
+    xhr.onreadystatechange = function()
+    {
+      if(xhr.readyState == 4)
+      {
+        if(xhr.status == 200)
+        {
+          var r = JSON.parse(xhr.responseText);
+
+          if(r && r.length)
+          {
+            var x = [];
+            var y = [];
+            for(var i = 0; i < r.length; i++)
+            {
+              x[i] = floor(new Date(r[i].time)/1000);
+              y[i] = parseFloat(r[i].size);
+              if(r[i].side == "buy") y[i] *= -1;
+            }
+            graph.insertDataBlockNext(x,y,0,1);
+            callback(graph);
+          }
+        }
+      }
+    }
+
+    xhr.open("GET","https://api.gdax.com/products/"+coin+"-USD/trades?before="+page+"&limit=100",true);
     xhr.send();
   }
 
@@ -443,6 +477,15 @@ var GamePlayScene = function(game, stage)
     ltc_graph.total_spent_val = 0;
     ltc_graph.total_owned_val = 0;
 
+    eth_pressure_graph = new variable_graph();
+    eth_pressure_graph.coin = ETH;
+    eth_pressure_graph.wx = 0;
+    eth_pressure_graph.wy = -0.10;
+    eth_pressure_graph.ww = cam.ww-0.1;
+    eth_pressure_graph.wh = cam.wh-0.3;
+    screenSpace(cam,canv,eth_pressure_graph);
+    eth_pressure_graph.genCache();
+
     my_graph = eth_graph;
 
     lr_grad= ctx.createLinearGradient(my_graph.x, 0, my_graph.x+my_graph.w, 0);
@@ -599,8 +642,15 @@ var GamePlayScene = function(game, stage)
     getDataBlock(BLOCK_DAY,   BTC,btc_graph,block_n,callback);
     getDataBlock(BLOCK_MINUTE,LTC,ltc_graph,block_n,callback);
     getDataBlock(BLOCK_HOUR,  LTC,ltc_graph,block_n,callback);
+    callback = function(graph)
+    {
+      graph.clampDisp();
+    }
     getDataBlock(BLOCK_DAY,   LTC,ltc_graph,block_n,callback);
-
+    for(var i = 0; i < 2; i++)
+    {
+      setTimeout(function(i){return function(){getPressureDataBlock((i+1),ETH,eth_pressure_graph,callback)}}(i),1000*(i+1));
+    }
   };
 
   self.tick = function()
@@ -671,6 +721,7 @@ var GamePlayScene = function(game, stage)
     var amt;
 
     my_graph.draw(ctx);
+    eth_pressure_graph.draw(ctx);
 
     //cur price
     ctx.fillStyle = black;

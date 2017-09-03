@@ -713,6 +713,7 @@ var variable_graph = function()
 
   self.yv = [];
   self.xv = [];
+  self.priority = [];
   /*
   //test data
   var n = 10;
@@ -819,7 +820,7 @@ var variable_graph = function()
     return true;
   }
 
-  self.insertDataNext = function(x,y,i)
+  self.insertDataNext = function(x,y,i,p)
   {
     self.dirty = true;
 
@@ -828,22 +829,32 @@ var variable_graph = function()
 
     i = self.nextibeforex(x,i)+1;
     if(self.xv[i] == x)
-      self.yv[i] = y;
+    {
+      if(p <= self.priority[i])
+      {
+        self.yv[i] = y;
+        self.priority[i] = p;
+      }
+    }
     else
     {
-      self.xv.splice(i,0,x);
-      self.yv.splice(i,0,y);
+      if(i == 0 || p <= self.priority[i-1] || p <= self.priority[i])
+      {
+        self.xv.splice(i,0,x);
+        self.yv.splice(i,0,y);
+        self.priority.splice(i,0,p);
+      }
     }
     return i;
   }
 
-  self.insertDataFind = function(x,y,min,max)
+  self.insertDataFind = function(x,y,min,max,p)
   {
     var i = self.findibeforex(x,min,max);
-    return self.insertDataNext(x,y,i);
+    return self.insertDataNext(x,y,i,p);
   }
 
-  self.insertDataBlockNext = function(x,y,i)
+  self.insertDataBlockNext = function(x,y,i,p)
   {
     self.dirty = true;
     if(x.length)
@@ -859,21 +870,28 @@ var variable_graph = function()
       i = self.nextibeforex(x[j],i)+1;
 
       if(self.xv[i] == x[j])
-        self.yv[i] = y[j];
+      {
+        if(p <= self.priority[i])
+          self.yv[i] = y[j];
+      }
       else
       {
-        self.xv.splice(i,0,x[j]);
-        self.yv.splice(i,0,y[j]);
+        if(i == 0 || p <= self.priority[i-1] || p <= self.priority[i])
+        {
+          self.xv.splice(i,0,x[j]);
+          self.yv.splice(i,0,y[j]);
+          self.priority.splice(i,0,p);
+        }
       }
     }
 
     return i;
   }
 
-  self.insertDataBlockFind = function(x,y,min,max)
+  self.insertDataBlockFind = function(x,y,min,max,p)
   {
     var i = self.findibeforex(x,min,max);
-    return self.insertDataBlockNext(x,y,i);
+    return self.insertDataBlockNext(x,y,i,p);
   }
 
   self.findqueryxt = function(xt,min,max)
@@ -938,7 +956,7 @@ var variable_graph = function()
 
   self.draw = function(ctx)
   {
-    if(self.dirty)
+    if(true)//self.dirty)
     {
       self.cache.context.clearRect(0,0,self.w,self.h);
       //v = value
