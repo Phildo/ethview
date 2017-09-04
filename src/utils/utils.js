@@ -1344,7 +1344,8 @@ var running_deriv_variable_graph = function()
       xi = self.nextibeforex(self.disp_min_xv,0);
       xl = mapVal(self.xv[xi],self.xv[xi+1],0,1,self.disp_min_xv)
       yv = lerp(self.yd[xi],self.yd[xi+1],xl);
-      yp = mapVal(self.disp_min_yv, self.disp_max_yv, self.h, 0, yv);
+      var disp_extreme_yv = abs(self.disp_min_yv) < abs(self.disp_max_yv) ? abs(self.disp_max_yv) : abs(self.disp_min_yv);
+      yp = mapVal(-disp_extreme_yv, disp_extreme_yv, self.h, 0, yv);
       self.cache.context.moveTo(0,yp);
       for(var j = 1; j < self.w; j++)
       {
@@ -1353,7 +1354,7 @@ var running_deriv_variable_graph = function()
         xl = mapVal(self.xv[xi],self.xv[xi+1],0,1,xv)
         yv = lerp(self.yd[xi],self.yd[xi+1],xl);
         xp = j;
-        yp = mapVal(self.disp_min_yv, self.disp_max_yv, self.h, 0, yv);
+        yp = mapVal(-disp_extreme_yv, disp_extreme_yv, self.h, 0, yv);
         self.cache.context.lineTo(xp,yp);
       }
       self.cache.context.stroke();

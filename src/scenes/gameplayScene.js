@@ -1,4 +1,3 @@
-  var eth_pressure_graph;
 var GamePlayScene = function(game, stage)
 {
   var self = this;
@@ -40,7 +39,7 @@ var GamePlayScene = function(game, stage)
   var eth_graph;
   var btc_graph;
   var ltc_graph;
-  //var eth_pressure_graph;
+  var eth_pressure_graph;
   var my_graph;
   var graph_cover;
 
@@ -651,7 +650,7 @@ var GamePlayScene = function(game, stage)
       graph.clampDisp();
     }
     getDataBlock(BLOCK_DAY,   LTC,ltc_graph,block_n,callback);
-    for(var i = 0; i < 2; i++)
+    for(var i = 0; i < 1; i++)
     {
       setTimeout(function(i){return function(){getPressureDataBlock((i+1),ETH,eth_pressure_graph,callback)}}(i),1000*(i+1));
     }
