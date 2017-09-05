@@ -118,7 +118,7 @@ var GamePlayScene = function(game, stage)
       for(var j = 0; j < COIN_COUNT; j++)
       {
         graphs[i][j].disp_min_xv = my_graph.disp_min_xv;
-        graphs[i][j].disp_min_yv = my_graph.disp_min_yv;
+        graphs[i][j].disp_max_yv = my_graph.disp_max_yv;
         graphs[i][j].span = my_graph.span;
       }
     }
@@ -252,13 +252,7 @@ var GamePlayScene = function(game, stage)
         case BLOCK_MINUTE: span = "minute"; priority = 0; break;
       }
 
-      var from = "ETH";
-      switch(coin)
-      {
-        case COIN_ETH: from = "ETH"; break;
-        case COIN_BTC: from = "BTC"; break;
-        case COIN_LTC: from = "LTC"; break;
-      }
+      var from = ticker(coin);
       var to = "USD";
       var xhr = new XMLHttpRequest();
       xhr.onreadystatechange = function()
@@ -301,59 +295,53 @@ var GamePlayScene = function(game, stage)
       }
       start = end-inc*n;
 
-      var from = "ETH";
-      switch(coin)
-      {
-        case COIN_ETH: from = "ETH"; break;
-        case COIN_BTC: from = "BTC"; break;
-        case COIN_LTC: from = "LTC"; break;
-      }
-
+      var from = ticker(coin);
+      var wait = 1;
       while(start < end)
       {
-        var xhr = new XMLHttpRequest();
-        xhr.onreadystatechange = function()
+        (function anon(start,wait)
         {
-          if(xhr.readyState == 4)
+          setTimeout(function()
           {
-            if(xhr.status == 200)
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function()
             {
-              var r = JSON.parse(xhr.responseText);
-
-              if(r && r.length)
+              if(xhr.readyState == 4)
               {
-                var x = [];
-                var y = [];
-                for(var i = 0; i < r.length; i++)
+                if(xhr.status == 200)
                 {
-                  x[i] = floor(new Date(r[i][0])/1000);
-                  y[i] = (parseFloat(r[i][1])+parseFloat(r[i][2]))/2;
+                  var r = JSON.parse(xhr.responseText);
+
+                  if(r && r.length)
+                  {
+                    var x = [];
+                    var y = [];
+                    for(var i = 0; i < r.length; i++)
+                    {
+                      x[i] = floor(new Date(r[i][0]));
+                      y[i] = (parseFloat(r[i][1])+parseFloat(r[i][2]))/2;
+                    }
+                    graph.insertDataBlockNext(x,y,0,priority);
+                    callback(graph);
+                  }
                 }
-                graph.insertDataBlockNext(x,y,0,1);
-                callback(graph);
               }
             }
-          }
-        }
-        start = new Date(start);
-        if(start+inc*200 < end) xhr.open("GET","https://api.gdax.com/products/"+from+"-USD/candles?start="+start.toISOString()+"&end="+new Date(start+inc*200).toISOString()+"&granularity="+inc,true);
-        else                    xhr.open("GET","https://api.gdax.com/products/"+from+"-USD/candles?start="+start.toISOString()+"&end="+end.toISOString()+"&granularity="+inc,true);
-        xhr.send();
+            start = new Date(start);
+            if(start+inc*200 < end) xhr.open("GET","https://api.gdax.com/products/"+from+"-USD/candles?start="+start.toISOString()+"&end="+new Date(start+inc*200).toISOString()+"&granularity="+inc,true);
+            else                    xhr.open("GET","https://api.gdax.com/products/"+from+"-USD/candles?start="+start.toISOString()+"&end="+end.toISOString()+"&granularity="+inc,true);
+            xhr.send();
+          },wait*1000);
+        })(start,wait);
         start += inc*200;
+        wait++;
       }
     }
   }
 
   var getPressureDataBlock = function(page,coin,graph,callback)
   {
-    var from = "ETH";
-    switch(coin)
-    {
-      case COIN_ETH: from = "ETH"; break;
-      case COIN_BTC: from = "BTC"; break;
-      case COIN_LTC: from = "LTC"; break;
-    }
-
+    var from = ticker(coin);
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function()
     {
@@ -739,9 +727,9 @@ var GamePlayScene = function(game, stage)
     for(var i = 0; i < SRC_COUNT; i++)
       for(var j = 0; j < COIN_COUNT; j++)
         for(var k = 0; k < BLOCK_COUNT; k++)
+        {
           getDataBlock(k,i,j,graphs[i][j],block_n,callback);
-
-    getDataBlock(BLOCK_MINUTE,SRC_GDAX,COIN_ETH,graphs[SRC_GDAX][COIN_ETH],block_n,callback);
+        }
 
     callback = function(graph)
     {
@@ -799,6 +787,8 @@ var GamePlayScene = function(game, stage)
       my_graph.disp_max_xv = target_disp_max_xv;
       my_graph.disp_min_yv = target_disp_min_yv;
       my_graph.disp_max_yv = target_disp_max_yv;
+      alignGraphs();
+      limitGraph();
     }
 
     if(auto_purchases)
