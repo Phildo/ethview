@@ -971,7 +971,7 @@ var variable_graph = function()
       var xl;
       var xi;
 
-      self.cache.context.strokeStyle = "#000000";
+      self.cache.context.strokeStyle = self.color;
       self.cache.context.beginPath();
       xi = self.nextibeforex(self.disp_min_xv,0);
       xl = mapVal(self.xv[xi],self.xv[xi+1],0,1,self.disp_min_xv)
@@ -1339,7 +1339,7 @@ var running_deriv_variable_graph = function()
       var xl;
       var xi;
 
-      self.cache.context.strokeStyle = "#000000";
+      self.cache.context.strokeStyle = self.color;
       self.cache.context.beginPath();
       xi = self.nextibeforex(self.disp_min_xv,0);
       xl = mapVal(self.xv[xi],self.xv[xi+1],0,1,self.disp_min_xv)

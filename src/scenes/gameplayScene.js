@@ -2,6 +2,8 @@ var GamePlayScene = function(game, stage)
 {
   var self = this;
 
+  var ENUM = 0;
+
   var canv = stage.drawCanv;
   var canvas = canv.canvas;
   var ctx = canv.context;
@@ -29,17 +31,29 @@ var GamePlayScene = function(game, stage)
   var rl_grad;
 
   var appname = "coinview";
-  var ETH = "ETH";
-  var BTC = "BTC";
-  var LTC = "LTC";
   var HR = "HR";
   var DAY = "DAY";
   var WEEK = "WEEK";
   var MONTH = "MONTH";
-  var eth_graph;
-  var btc_graph;
-  var ltc_graph;
-  var eth_pressure_graph;
+
+  ENUM = 0;
+  var COIN_ETH = ENUM; ENUM++;
+  var COIN_BTC = ENUM; ENUM++;
+  var COIN_LTC = ENUM; ENUM++;
+  var COIN_COUNT = ENUM; ENUM++;
+
+  ENUM = 0;
+  var BLOCK_MINUTE = ENUM; ENUM++;
+  var BLOCK_HOUR   = ENUM; ENUM++;
+  var BLOCK_DAY    = ENUM; ENUM++;
+  var BLOCK_COUNT = ENUM; ENUM++;
+
+  ENUM = 0;
+  var SRC_KRAK = ENUM; ENUM++;
+  var SRC_GDAX = ENUM; ENUM++;
+  var SRC_COUNT = ENUM; ENUM++;
+
+  var graphs = [];
   var my_graph;
   var graph_cover;
 
@@ -86,19 +100,30 @@ var GamePlayScene = function(game, stage)
   var target_disp_ttl;
   var target_disp_max_ttl;
 
+  var ticker = function(coin)
+  {
+    switch(coin)
+    {
+      case COIN_ETH: return "ETH"; break;
+      case COIN_BTC: return "BTC"; break;
+      case COIN_LTC: return "LTC"; break;
+    }
+    return "ETH";
+  }
+
   var alignGraphs = function()
   {
-    eth_graph.disp_min_xv = my_graph.disp_min_xv;
-    eth_graph.disp_max_xv = my_graph.disp_max_xv;
-    btc_graph.disp_min_xv = my_graph.disp_min_xv;
-    btc_graph.disp_max_xv = my_graph.disp_max_xv;
-    ltc_graph.disp_min_xv = my_graph.disp_min_xv;
-    ltc_graph.disp_max_xv = my_graph.disp_max_xv;
+    for(var i = 0; i < SRC_COUNT; i++)
+    {
+      for(var j = 0; j < COIN_COUNT; j++)
+      {
+        graphs[i][j].disp_min_xv = my_graph.disp_min_xv;
+        graphs[i][j].disp_min_yv = my_graph.disp_min_yv;
+        graphs[i][j].span = my_graph.span;
+      }
+    }
     eth_pressure_graph.disp_min_xv = my_graph.disp_min_xv;
     eth_pressure_graph.disp_max_xv = my_graph.disp_max_xv;
-    eth_graph.span = my_graph.span;
-    btc_graph.span = my_graph.span;
-    ltc_graph.span = my_graph.span;
     eth_pressure_graph.span = my_graph.span;
   }
 
@@ -107,12 +132,13 @@ var GamePlayScene = function(game, stage)
     graph.total_owned = 0;
     graph.total_spent_val = 0;
     graph.total_owned_val = 0;
-    if(purchases && purchases[graph.coin])
+    var tick = ticker(graph.coin);
+    if(purchases && purchases[tick])
     {
-      for(var i = 0; i < purchases[graph.coin].length; i++)
+      for(var i = 0; i < purchases[tick].length; i++)
       {
-        graph.total_owned += purchases[graph.coin][i].amt;
-        graph.total_spent_val += purchases[graph.coin][i].spent;
+        graph.total_owned += purchases[tick][i].amt;
+        graph.total_spent_val += purchases[tick][i].spent;
       }
     }
     graph.total_owned_val = graph.yv[graph.yv.length-1]*graph.total_owned;
@@ -191,7 +217,7 @@ var GamePlayScene = function(game, stage)
 
   var getDataPt = function(ts,graph,callback)
   {
-    var from = graph.coin;
+    var from = ticker(graph.coin);
     var to = "USD";
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function()
@@ -213,53 +239,121 @@ var GamePlayScene = function(game, stage)
     xhr.send();
   }
 
-  var ENUM = 0;
-  var BLOCK_DAY    = ENUM; ENUM++;
-  var BLOCK_MINUTE = ENUM; ENUM++;
-  var BLOCK_HOUR   = ENUM; ENUM++;
-  var getDataBlock = function(block,coin,graph,n,callback)
+  var getDataBlock = function(block,src,coin,graph,n,callback)
   {
-    var span = "day";
-    var priority = 3;
-    switch(block)
+    if(src == SRC_KRAK)
     {
-      case BLOCK_DAY:    span = "day";    priority = 2; break;
-      case BLOCK_HOUR:   span = "hour";   priority = 1; break;
-      case BLOCK_MINUTE: span = "minute"; priority = 0; break;
-    }
-
-    var from = coin;
-    var to = "USD";
-    var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function()
-    {
-      if(xhr.readyState == 4)
+      var span = "day";
+      var priority = 3;
+      switch(block)
       {
-        if(xhr.status == 200)
-        {
-          var r = JSON.parse(xhr.responseText);
+        case BLOCK_DAY:    span = "day";    priority = 2; break;
+        case BLOCK_HOUR:   span = "hour";   priority = 1; break;
+        case BLOCK_MINUTE: span = "minute"; priority = 0; break;
+      }
 
-          if(r && r.Data && r.Data.length)
+      var from = "ETH";
+      switch(coin)
+      {
+        case COIN_ETH: from = "ETH"; break;
+        case COIN_BTC: from = "BTC"; break;
+        case COIN_LTC: from = "LTC"; break;
+      }
+      var to = "USD";
+      var xhr = new XMLHttpRequest();
+      xhr.onreadystatechange = function()
+      {
+        if(xhr.readyState == 4)
+        {
+          if(xhr.status == 200)
           {
-            var x = [];
-            var y = [];
-            for(var i = 0; i < r.Data.length; i++)
+            var r = JSON.parse(xhr.responseText);
+
+            if(r && r.Data && r.Data.length)
             {
-              x[i] = r.Data[i].time;
-              y[i] = r.Data[i].close;
+              var x = [];
+              var y = [];
+              for(var i = 0; i < r.Data.length; i++)
+              {
+                x[i] = r.Data[i].time;
+                y[i] = r.Data[i].close;
+              }
+              graph.insertDataBlockNext(x,y,0,priority);
+              callback(graph);
             }
-            graph.insertDataBlockNext(x,y,0,priority);
-            callback(graph);
           }
         }
       }
+      xhr.open("GET","https://min-api.cryptocompare.com/data/histo"+span+"?fsym="+from+"&tsym="+to+"&limit="+n+"&aggregate=1&extraParams="+appname,true);
+      xhr.send();
     }
-    xhr.open("GET","https://min-api.cryptocompare.com/data/histo"+span+"?fsym="+from+"&tsym="+to+"&limit="+n+"&aggregate=1&extraParams="+appname,true);
-    xhr.send();
+    else if(src == SRC_GDAX)
+    {
+      var start;
+      var end = new Date();
+      var inc = day;
+      var priority = 3;
+      switch(block)
+      {
+        case BLOCK_DAY:    inc = day;  priority = 2; break;
+        case BLOCK_HOUR:   inc = hr;   priority = 1; break;
+        case BLOCK_MINUTE: inc = min;  priority = 0; break;
+      }
+      start = end-inc*n;
+
+      var from = "ETH";
+      switch(coin)
+      {
+        case COIN_ETH: from = "ETH"; break;
+        case COIN_BTC: from = "BTC"; break;
+        case COIN_LTC: from = "LTC"; break;
+      }
+
+      while(start < end)
+      {
+        var xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function()
+        {
+          if(xhr.readyState == 4)
+          {
+            if(xhr.status == 200)
+            {
+              var r = JSON.parse(xhr.responseText);
+
+              if(r && r.length)
+              {
+                var x = [];
+                var y = [];
+                for(var i = 0; i < r.length; i++)
+                {
+                  x[i] = floor(new Date(r[i][0])/1000);
+                  y[i] = (parseFloat(r[i][1])+parseFloat(r[i][2]))/2;
+                }
+                graph.insertDataBlockNext(x,y,0,1);
+                callback(graph);
+              }
+            }
+          }
+        }
+        start = new Date(start);
+        if(start+inc*200 < end) xhr.open("GET","https://api.gdax.com/products/"+from+"-USD/candles?start="+start.toISOString()+"&end="+new Date(start+inc*200).toISOString()+"&granularity="+inc,true);
+        else                    xhr.open("GET","https://api.gdax.com/products/"+from+"-USD/candles?start="+start.toISOString()+"&end="+end.toISOString()+"&granularity="+inc,true);
+        xhr.send();
+        start += inc*200;
+      }
+    }
   }
 
   var getPressureDataBlock = function(page,coin,graph,callback)
   {
+    var from = "ETH";
+    switch(coin)
+    {
+      case COIN_ETH: from = "ETH"; break;
+      case COIN_BTC: from = "BTC"; break;
+      case COIN_LTC: from = "LTC"; break;
+    }
+
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = function()
     {
@@ -286,7 +380,7 @@ var GamePlayScene = function(game, stage)
       }
     }
 
-    xhr.open("GET","https://api.gdax.com/products/"+coin+"-USD/trades?before="+page+"&limit=100",true);
+    xhr.open("GET","https://api.gdax.com/products/"+from+"-USD/trades?before="+page+"&limit=100",true);
     xhr.send();
   }
 
@@ -444,44 +538,49 @@ var GamePlayScene = function(game, stage)
       };
     }
 
-    eth_graph = new variable_graph();
-    eth_graph.coin = ETH;
-    eth_graph.wx = 0;
-    eth_graph.wy = -0.10;
-    eth_graph.ww = cam.ww-0.1;
-    eth_graph.wh = cam.wh-0.3;
-    screenSpace(cam,canv,eth_graph);
-    eth_graph.genCache();
-    eth_graph.total_owned = 0;
-    eth_graph.total_spent_val = 0;
-    eth_graph.total_owned_val = 0;
+    for(var i = 0; i < SRC_COUNT; i++)
+      graphs[i] = [];
 
-    btc_graph = new variable_graph();
-    btc_graph.coin = BTC;
-    btc_graph.wx = eth_graph.wx;
-    btc_graph.wy = eth_graph.wy;
-    btc_graph.ww = eth_graph.ww;
-    btc_graph.wh = eth_graph.wh;
-    screenSpace(cam,canv,btc_graph);
-    btc_graph.genCache();
-    btc_graph.total_owned = 0;
-    btc_graph.total_spent_val = 0;
-    btc_graph.total_owned_val = 0;
+    graphs[SRC_KRAK][COIN_ETH] = new variable_graph();
+    graphs[SRC_KRAK][COIN_ETH].coin = COIN_ETH;
+    graphs[SRC_KRAK][COIN_ETH].wx = 0;
+    graphs[SRC_KRAK][COIN_ETH].wy = -0.10;
+    graphs[SRC_KRAK][COIN_ETH].ww = cam.ww-0.1;
+    graphs[SRC_KRAK][COIN_ETH].wh = cam.wh-0.3;
+    screenSpace(cam,canv,graphs[SRC_KRAK][COIN_ETH]);
+    graphs[SRC_KRAK][COIN_ETH].genCache();
+    graphs[SRC_KRAK][COIN_ETH].total_owned = 0;
+    graphs[SRC_KRAK][COIN_ETH].total_spent_val = 0;
+    graphs[SRC_KRAK][COIN_ETH].total_owned_val = 0;
 
-    ltc_graph = new variable_graph();
-    ltc_graph.coin = LTC;
-    ltc_graph.wx = eth_graph.wx;
-    ltc_graph.wy = eth_graph.wy;
-    ltc_graph.ww = eth_graph.ww;
-    ltc_graph.wh = eth_graph.wh;
-    screenSpace(cam,canv,ltc_graph);
-    ltc_graph.genCache();
-    ltc_graph.total_owned = 0;
-    ltc_graph.total_spent_val = 0;
-    ltc_graph.total_owned_val = 0;
+    for(var i = 0; i < SRC_COUNT; i++)
+    {
+      for(var j = 0; j < COIN_COUNT; j++)
+      {
+        if(i == 0 && j == 0) continue; //already done
+        graphs[i][j] = new variable_graph();
+        graphs[i][j].coin = j;
+        graphs[i][j].wx = graphs[SRC_KRAK][COIN_ETH].wx;
+        graphs[i][j].wy = graphs[SRC_KRAK][COIN_ETH].wy;
+        graphs[i][j].ww = graphs[SRC_KRAK][COIN_ETH].ww;
+        graphs[i][j].wh = graphs[SRC_KRAK][COIN_ETH].wh;
+        screenSpace(cam,canv,graphs[i][j]);
+        graphs[i][j].genCache();
+        graphs[i][j].total_owned = 0;
+        graphs[i][j].total_spent_val = 0;
+        graphs[i][j].total_owned_val = 0;
+      }
+    }
+
+    graphs[SRC_KRAK][COIN_ETH].color = "#3D95FD";
+    graphs[SRC_GDAX][COIN_ETH].color = "#004488";
+    graphs[SRC_KRAK][COIN_BTC].color = "#FAB915";
+    graphs[SRC_GDAX][COIN_BTC].color = "#F5A400";
+    graphs[SRC_KRAK][COIN_LTC].color = "#C9C9C9";
+    graphs[SRC_GDAX][COIN_LTC].color = "#DFDFDF";
 
     eth_pressure_graph = new running_deriv_variable_graph();
-    eth_pressure_graph.coin = ETH;
+    eth_pressure_graph.coin = COIN_ETH;
     eth_pressure_graph.wx = 0;
     eth_pressure_graph.wy = -0.10;
     eth_pressure_graph.ww = cam.ww-0.1;
@@ -489,7 +588,7 @@ var GamePlayScene = function(game, stage)
     screenSpace(cam,canv,eth_pressure_graph);
     eth_pressure_graph.genCache();
 
-    my_graph = eth_graph;
+    my_graph = graphs[SRC_KRAK][COIN_ETH];
 
     lr_grad= ctx.createLinearGradient(my_graph.x, 0, my_graph.x+my_graph.w, 0);
     lr_grad.addColorStop(0, "black");
@@ -557,11 +656,11 @@ var GamePlayScene = function(game, stage)
     var w = 50;
     var s = 10;
     var y = my_graph.y-(s+h)*2;
-    eth_btn = new ButtonBox(x,y,w,h,function(){ my_graph = eth_graph; if(keys.alt) stretchGraph(); else normalizeGraph(); my_graph.dirty = true; });
+    eth_btn = new ButtonBox(x,y,w,h,function(){ my_graph = graphs[SRC_KRAK][COIN_ETH]; if(keys.alt) stretchGraph(); else normalizeGraph(); my_graph.dirty = true; });
     x += w+s;
-    btc_btn = new ButtonBox(x,y,w,h,function(){ my_graph = btc_graph; if(keys.alt) stretchGraph(); else normalizeGraph(); my_graph.dirty = true; });
+    btc_btn = new ButtonBox(x,y,w,h,function(){ my_graph = graphs[SRC_KRAK][COIN_BTC]; if(keys.alt) stretchGraph(); else normalizeGraph(); my_graph.dirty = true; });
     x += w+s;
-    ltc_btn = new ButtonBox(x,y,w,h,function(){ my_graph = ltc_graph; if(keys.alt) stretchGraph(); else normalizeGraph(); my_graph.dirty = true; });
+    ltc_btn = new ButtonBox(x,y,w,h,function(){ my_graph = graphs[SRC_KRAK][COIN_LTC]; if(keys.alt) stretchGraph(); else normalizeGraph(); my_graph.dirty = true; });
     x += w+s;
     show_btn = new ButtonBox(x,y,w,h,function(){ show_purchases = !show_purchases; });
     x += w+s*3;
@@ -598,7 +697,7 @@ var GamePlayScene = function(game, stage)
       target_disp_ttl = target_disp_max_ttl;
       limitGraph();
       my_graph.dirty = true;
-      getDataBlock(BLOCK_MINUTE,my_graph.coin,my_graph,block_n,function()
+      getDataBlock(BLOCK_MINUTE,SRC_KRAK,my_graph.coin,my_graph,block_n,function()
       {
         delta = my_graph.disp_max_xv-my_graph.disp_min_xv;
         target_disp_max_xv = my_graph.xv[my_graph.xv.length-1];
@@ -637,22 +736,20 @@ var GamePlayScene = function(game, stage)
       aggregatePurchases(graph);
       limitGraph();
     }
-    getDataBlock(BLOCK_MINUTE,ETH,eth_graph,block_n,callback);
-    getDataBlock(BLOCK_HOUR,  ETH,eth_graph,block_n,callback);
-    getDataBlock(BLOCK_DAY,   ETH,eth_graph,block_n,callback);
-    getDataBlock(BLOCK_MINUTE,BTC,btc_graph,block_n,callback);
-    getDataBlock(BLOCK_HOUR,  BTC,btc_graph,block_n,callback);
-    getDataBlock(BLOCK_DAY,   BTC,btc_graph,block_n,callback);
-    getDataBlock(BLOCK_MINUTE,LTC,ltc_graph,block_n,callback);
-    getDataBlock(BLOCK_HOUR,  LTC,ltc_graph,block_n,callback);
+    for(var i = 0; i < SRC_COUNT; i++)
+      for(var j = 0; j < COIN_COUNT; j++)
+        for(var k = 0; k < BLOCK_COUNT; k++)
+          getDataBlock(k,i,j,graphs[i][j],block_n,callback);
+
+    getDataBlock(BLOCK_MINUTE,SRC_GDAX,COIN_ETH,graphs[SRC_GDAX][COIN_ETH],block_n,callback);
+
     callback = function(graph)
     {
       graph.clampDisp();
     }
-    getDataBlock(BLOCK_DAY,   LTC,ltc_graph,block_n,callback);
     for(var i = 0; i < 1; i++)
     {
-      setTimeout(function(i){return function(){getPressureDataBlock((i+1),ETH,eth_pressure_graph,callback)}}(i),1000*(i+1));
+      setTimeout(function(i){return function(){getPressureDataBlock((i+1),COIN_ETH,eth_pressure_graph,callback)}}(i),1000*(i+1));
     }
   };
 
@@ -724,6 +821,9 @@ var GamePlayScene = function(game, stage)
     var amt;
 
     my_graph.draw(ctx);
+    for(var i = 0; i < SRC_COUNT; i++)
+      for(var j = 0; j < COIN_COUNT; j++)
+        graphs[i][j].draw(ctx);
     eth_pressure_graph.draw(ctx);
 
     //cur price
@@ -792,7 +892,7 @@ var GamePlayScene = function(game, stage)
         ctx.textAlign = "left";
       }
       ctx.font = s+"px Arial";
-      drawOutlinedText(my_graph.coin+" "+my_graph.total_owned, x, my_graph.y+my_graph.h-10-s*3, 1, ctx);
+      drawOutlinedText(ticker(my_graph.coin)+" "+my_graph.total_owned, x, my_graph.y+my_graph.h-10-s*3, 1, ctx);
       drawOutlinedText("(@ $"+fdisp(my_graph.total_spent_val/my_graph.total_owned)+")", x, my_graph.y+my_graph.h-10-s*2, 1, ctx);
       var delta = my_graph.total_owned_val-my_graph.total_spent_val;
       var p = delta/my_graph.total_spent_val;
@@ -906,7 +1006,8 @@ var GamePlayScene = function(game, stage)
     //purchases
     ctx.strokeStyle = blue;
     ctx.lineWidth = 0.5;
-    if(purchases && purchases[my_graph.coin] && show_purchases)
+    var tick = ticker(my_graph.coin);
+    if(purchases && purchases[tick] && show_purchases)
     {
       var closest_i = -1;
       var closest_x = 999999999;
@@ -926,15 +1027,15 @@ var GamePlayScene = function(game, stage)
       ctx.stroke();
 
       ctx.lineWidth = 0.5;
-      for(var i = 0; i < purchases[my_graph.coin].length; i++)
+      for(var i = 0; i < purchases[tick].length; i++)
       {
-        val = purchases[my_graph.coin][i].rate;
-        amt = purchases[my_graph.coin][i].amt;
+        val = purchases[tick][i].rate;
+        amt = purchases[tick][i].amt;
 
         if(amt < 0) ctx.strokeStyle = red;
         else        ctx.strokeStyle = green;
 
-        x = mapVal(my_graph.disp_min_xv, my_graph.disp_max_xv, my_graph.x, my_graph.x+my_graph.w, purchases[my_graph.coin][i].ts);
+        x = mapVal(my_graph.disp_min_xv, my_graph.disp_max_xv, my_graph.x, my_graph.x+my_graph.w, purchases[tick][i].ts);
         y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, val);
         if(abs(x-hover_pos.x) < abs(closest_x-hover_pos.x))
         {
@@ -983,9 +1084,9 @@ var GamePlayScene = function(game, stage)
         val = closest_val;
         i = closest_i;
         ctx.fillStyle = black;
-        drawOutlinedText(my_graph.coin+" "+fdisp(purchases[my_graph.coin][i].amt)+" @ $"+fdisp(val), x+xoff,y+30, 1, ctx);
-        var spent = purchases[my_graph.coin][i].spent;
-        var have = purchases[my_graph.coin][i].amt*my_graph.yv[my_graph.yv.length-1];
+        drawOutlinedText(tick+" "+fdisp(purchases[tick][i].amt)+" @ $"+fdisp(val), x+xoff,y+30, 1, ctx);
+        var spent = purchases[tick][i].spent;
+        var have = purchases[tick][i].amt*my_graph.yv[my_graph.yv.length-1];
         var delta = have-spent;
         var p = delta/spent;
         drawOutlinedText("($"+fdisp(spent)+" -> $"+fdisp(have)+")", x+xoff,y+45, 1, ctx);
@@ -1001,7 +1102,7 @@ var GamePlayScene = function(game, stage)
         }
         ctx.fillStyle = black;
         ctx.strokeStyle = black;
-        drawOutlinedText(dateToString(new Date(purchases[my_graph.coin][i].ts*1000)),x+xoff,y+75, 1, ctx);
+        drawOutlinedText(dateToString(new Date(purchases[tick][i].ts*1000)),x+xoff,y+75, 1, ctx);
         ctx.beginPath();
         ctx.arc(x,y,arc_r,0,twopi);
         ctx.stroke();
@@ -1017,9 +1118,9 @@ var GamePlayScene = function(game, stage)
 
     //buttons
     ctx.strokeStyle = black;
-    drawbtntitle(eth_btn,ETH,my_graph.coin == ETH);
-    drawbtntitle(btc_btn,BTC,my_graph.coin == BTC);
-    drawbtntitle(ltc_btn,LTC,my_graph.coin == LTC);
+    drawbtntitle(eth_btn,ticker(COIN_ETH),my_graph.coin == COIN_ETH);
+    drawbtntitle(btc_btn,ticker(COIN_BTC),my_graph.coin == COIN_BTC);
+    drawbtntitle(ltc_btn,ticker(COIN_LTC),my_graph.coin == COIN_LTC);
     drawbtntitle(hr_btn,"hr",my_graph.span == HR);
     drawbtntitle(day_btn,"day",my_graph.span == DAY);
     drawbtntitle(week_btn,"week",my_graph.span == WEEK);
