@@ -14,7 +14,10 @@ var GamePlayScene = function(game, stage)
   var clicker;
   var keyer;
 
-  var sec = 1;
+  var req_q;
+  var req_t;
+
+  var sec = 1*1000;
   var min = sec*60;
   var hr  = min*60;
   var day = hr*24;
@@ -46,11 +49,11 @@ var GamePlayScene = function(game, stage)
   var BLOCK_MINUTE = ENUM; ENUM++;
   var BLOCK_HOUR   = ENUM; ENUM++;
   var BLOCK_DAY    = ENUM; ENUM++;
-  var BLOCK_COUNT = ENUM; ENUM++;
+  var BLOCK_COUNT  = ENUM; ENUM++;
 
   ENUM = 0;
-  var SRC_KRAK = ENUM; ENUM++;
-  var SRC_GDAX = ENUM; ENUM++;
+  var SRC_KRAK  = ENUM; ENUM++;
+  var SRC_GDAX  = ENUM; ENUM++;
   var SRC_COUNT = ENUM; ENUM++;
 
   var graphs = [];
@@ -231,7 +234,7 @@ var GamePlayScene = function(game, stage)
     var from = ticker(graph.coin);
     var to = "USD";
     var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function()
+    xhr.onreadystatechange = (function a(xhr){return function()
     {
       if(xhr.readyState == 4)
       {
@@ -245,9 +248,9 @@ var GamePlayScene = function(game, stage)
           }
         }
       }
-    }
+    }})(xhr);
     xhr.open("GET","https://min-api.cryptocompare.com/data/pricehistorical?fsym="+from+"&tsyms="+to+"&ts="+ts+"&extraParams="+appname,true);
-    xhr.send();
+    req_q.push(xhr);
   }
 
   var getDataBlock = function(block,src,coin,graph,n,callback)
@@ -266,7 +269,7 @@ var GamePlayScene = function(game, stage)
       var from = ticker(coin);
       var to = "USD";
       var xhr = new XMLHttpRequest();
-      xhr.onreadystatechange = function()
+      xhr.onreadystatechange = (function a(xhr){return function()
       {
         if(xhr.readyState == 4)
         {
@@ -280,7 +283,7 @@ var GamePlayScene = function(game, stage)
               var y = [];
               for(var i = 0; i < r.Data.length; i++)
               {
-                x[i] = r.Data[i].time;
+                x[i] = r.Data[i].time*1000;
                 y[i] = r.Data[i].close;
               }
               graph.insertDataBlockNext(x,y,0,priority);
@@ -288,9 +291,9 @@ var GamePlayScene = function(game, stage)
             }
           }
         }
-      }
+      }})(xhr);
       xhr.open("GET","https://min-api.cryptocompare.com/data/histo"+span+"?fsym="+from+"&tsym="+to+"&limit="+n+"&aggregate=1&extraParams="+appname,true);
-      xhr.send();
+      req_q.push(xhr);
     }
     else if(src == SRC_GDAX)
     {
@@ -304,46 +307,40 @@ var GamePlayScene = function(game, stage)
         case BLOCK_HOUR:   inc = hr;   priority = 1; break;
         case BLOCK_MINUTE: inc = min;  priority = 0; break;
       }
+      if(inc != hr && inc != min) return;
       start = end-inc*n;
 
       var from = ticker(coin);
       var wait = 1;
       while(start < end)
       {
-        (function anon(start,wait)
+        var xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = (function a(xhr){return function()
         {
-          setTimeout(function()
+          if(xhr.readyState == 4)
           {
-            var xhr = new XMLHttpRequest();
-            xhr.onreadystatechange = function()
+            if(xhr.status == 200)
             {
-              if(xhr.readyState == 4)
-              {
-                if(xhr.status == 200)
-                {
-                  var r = JSON.parse(xhr.responseText);
+              var r = JSON.parse(xhr.responseText);
 
-                  if(r && r.length)
-                  {
-                    var x = [];
-                    var y = [];
-                    for(var i = 0; i < r.length; i++)
-                    {
-                      x[i] = floor(new Date(r[i][0]));
-                      y[i] = (parseFloat(r[i][1])+parseFloat(r[i][2]))/2;
-                    }
-                    graph.insertDataBlockNext(x,y,0,priority);
-                    callback(graph);
-                  }
+              if(r && r.length)
+              {
+                var x = [];
+                var y = [];
+                for(var i = 0; i < r.length; i++)
+                {
+                  x[i] = floor(new Date(r[i][0]))*1000;
+                  y[i] = (parseFloat(r[i][1])+parseFloat(r[i][2]))/2;
                 }
+                graph.insertDataBlockNext(x,y,0,priority);
+                callback(graph);
               }
             }
-            start = new Date(start);
-            if(start+inc*200 < end) xhr.open("GET","https://api.gdax.com/products/"+from+"-USD/candles?start="+start.toISOString()+"&end="+new Date(start+inc*200).toISOString()+"&granularity="+inc,true);
-            else                    xhr.open("GET","https://api.gdax.com/products/"+from+"-USD/candles?start="+start.toISOString()+"&end="+end.toISOString()+"&granularity="+inc,true);
-            xhr.send();
-          },wait*1000);
-        })(start,wait);
+          }
+        }})(xhr);
+        if(start+inc*200 < end) xhr.open("GET","https://api.gdax.com/products/"+from+"-USD/candles?start="+new Date(start).toISOString()+"&end="+new Date(start+inc*200).toISOString()+"&granularity="+(inc/1000),true);
+        else                    xhr.open("GET","https://api.gdax.com/products/"+from+"-USD/candles?start="+new Date(start).toISOString()+"&end="+end.toISOString()+"&granularity="+(inc/1000),true);
+        req_q.push(xhr);
         start += inc*200;
         wait++;
       }
@@ -354,7 +351,7 @@ var GamePlayScene = function(game, stage)
   {
     var from = ticker(coin);
     var xhr = new XMLHttpRequest();
-    xhr.onreadystatechange = function()
+    xhr.onreadystatechange = (function a(xhr){return function()
     {
       if(xhr.readyState == 4)
       {
@@ -368,7 +365,7 @@ var GamePlayScene = function(game, stage)
             var y = [];
             for(var i = 0; i < r.length; i++)
             {
-              x[i] = floor(new Date(r[i].time)/1000);
+              x[i] = floor(new Date(r[i].time));
               y[i] = parseFloat(r[i].size);
               if(r[i].side == "buy") y[i] *= -1;
             }
@@ -377,10 +374,10 @@ var GamePlayScene = function(game, stage)
           }
         }
       }
-    }
+    }})(xhr);
 
     xhr.open("GET","https://api.gdax.com/products/"+from+"-USD/trades?before="+page+"&limit=100",true);
-    xhr.send();
+    req_q.push(xhr);
   }
 
   self.ready = function()
@@ -389,6 +386,9 @@ var GamePlayScene = function(game, stage)
     dragger = new Dragger({source:stage.dispCanv.canvas});
     clicker = new Clicker({source:stage.dispCanv.canvas});
     keyer = new Keyer({source:stage.dispCanv.canvas});
+
+    req_q = [];
+    req_t = 0;
 
     hover_pos = {x:0,y:0};
 
@@ -414,7 +414,7 @@ var GamePlayScene = function(game, stage)
         for(var i = 0; i < purchases.ETH.length; i++)
         {
           purchases.ETH[i].ts = new Date(purchases.ETH[i].date);
-          purchases.ETH[i].ts = floor(purchases.ETH[i].ts/1000)+2*hr;
+          purchases.ETH[i].ts = floor(purchases.ETH[i].ts)+2*hr;
           purchases.ETH[i].rate = purchases.ETH[i].spent/purchases.ETH[i].amt;
         }
         for(var i = 0; i < purchases.ETH.length-1; i++)
@@ -434,7 +434,7 @@ var GamePlayScene = function(game, stage)
         for(var i = 0; i < purchases.BTC.length; i++)
         {
           purchases.BTC[i].ts = new Date(purchases.BTC[i].date);
-          purchases.BTC[i].ts = floor(purchases.BTC[i].ts/1000)+2*hr;
+          purchases.BTC[i].ts = floor(purchases.BTC[i].ts)+2*hr;
           purchases.BTC[i].rate = purchases.BTC[i].spent/purchases.BTC[i].amt;
         }
         for(var i = 0; i < purchases.BTC.length-1; i++)
@@ -454,7 +454,7 @@ var GamePlayScene = function(game, stage)
         for(var i = 0; i < purchases.LTC.length; i++)
         {
           purchases.LTC[i].ts = new Date(purchases.LTC[i].date);
-          purchases.LTC[i].ts = floor(purchases.LTC[i].ts/1000)+2*hr;
+          purchases.LTC[i].ts = floor(purchases.LTC[i].ts)+2*hr;
           purchases.LTC[i].rate = purchases.LTC[i].spent/purchases.LTC[i].amt;
         }
         for(var i = 0; i < purchases.LTC.length-1; i++)
@@ -792,6 +792,16 @@ var GamePlayScene = function(game, stage)
     keyer.filter(keys);
     keyer.flush();
 
+    if(req_q.length)
+    {
+      if(new Date()-req_t > sec)
+      {
+        req_q[0].send();
+        req_q.splice(0,1);
+        req_t = new Date();
+      }
+    }
+
     left_val  = my_graph.findqueryx(my_graph.disp_min_xv);
     right_val = my_graph.findqueryx(my_graph.disp_max_xv);
     span_delta = right_val-left_val;
@@ -847,7 +857,7 @@ var GamePlayScene = function(game, stage)
       for(var j = 0; j < COIN_COUNT; j++)
         if(j != my_graph.coin)
           graphs[i][j].draw(ctx);
-    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.fillStyle = "rgba(255,255,255,0.8)";
     ctx.fillRect(my_graph.x,my_graph.y,my_graph.w,my_graph.h);
     for(var i = 0; i < SRC_COUNT; i++)
       graphs[i][my_graph.coin].draw(ctx);
