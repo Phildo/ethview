@@ -95,8 +95,8 @@ var GamePlayScene = function(game, stage)
 
   var target_disp_min_xv;
   var target_disp_max_xv;
-  var target_disp_min_yv;
-  var target_disp_max_yv;
+  var target_disp_min_yv = [];
+  var target_disp_max_yv = [];
   var target_disp_ttl;
   var target_disp_max_ttl;
 
@@ -118,8 +118,10 @@ var GamePlayScene = function(game, stage)
       for(var j = 0; j < COIN_COUNT; j++)
       {
         graphs[i][j].disp_min_xv = my_graph.disp_min_xv;
-        graphs[i][j].disp_max_yv = my_graph.disp_max_yv;
+        graphs[i][j].disp_max_xv = my_graph.disp_max_xv;
         graphs[i][j].span = my_graph.span;
+        graphs[i][j].disp_min_yv = graphs[0][j].disp_min_yv;
+        graphs[i][j].disp_max_yv = graphs[0][j].disp_max_yv;
       }
     }
     eth_pressure_graph.disp_min_xv = my_graph.disp_min_xv;
@@ -148,8 +150,11 @@ var GamePlayScene = function(game, stage)
   {
     target_disp_min_xv = my_graph.disp_min_xv;
     target_disp_max_xv = my_graph.disp_max_xv;
-    target_disp_min_yv = my_graph.disp_min_yv;
-    target_disp_max_yv = my_graph.disp_max_yv;
+    for(var i = 0; i < COIN_COUNT; i++)
+    {
+      target_disp_min_yv[i] = graphs[0][i].disp_min_yv;
+      target_disp_max_yv[i] = graphs[0][i].disp_max_yv;
+    }
   }
 
   var limitGraph = function()
@@ -178,40 +183,46 @@ var GamePlayScene = function(game, stage)
 
   var stretchGraph = function()
   {
-    var index = my_graph.findibeforex(my_graph.disp_min_xv);
-    var lowest = my_graph.yv[index];
-    var highest = my_graph.yv[index];
-    var val;
-    for(var i = 0; i <= my_graph.w; i++)
+    for(var i = 0; i < COIN_COUNT; i++)
     {
-      val = my_graph.nextqueryxt(i/my_graph.w,index);
-      if(val < lowest)  lowest  = val;
-      if(val > highest) highest = val;
+      var index = graphs[0][i].findibeforex(graphs[0][i].disp_min_xv);
+      var lowest = graphs[0][i].yv[index];
+      var highest = graphs[0][i].yv[index];
+      var val;
+      for(var j = 0; j <= graphs[0][i].w; j++)
+      {
+        val = graphs[0][i].nextqueryxt(j/graphs[0][i].w,index);
+        if(val < lowest)  lowest  = val;
+        if(val > highest) highest = val;
+      }
+      delta = highest-lowest;
+      lowest  -= delta*0.1;
+      highest += delta*0.1;
+      target_disp_min_yv[i] = lowest;
+      target_disp_max_yv[i] = highest;
+      target_disp_ttl = target_disp_max_ttl;
     }
-    delta = highest-lowest;
-    lowest  -= delta*0.1;
-    highest += delta*0.1;
-    target_disp_min_yv = lowest;
-    target_disp_max_yv = highest;
-    target_disp_ttl = target_disp_max_ttl;
     limitGraph();
   }
 
   var normalizeGraph = function()
   {
-    if(my_graph.known_min_yv == my_graph.known_max_yv)
+    for(var i = 0; i < COIN_COUNT; i++)
     {
-      target_disp_min_yv = my_graph.known_min_yv-1;
-      target_disp_max_yv = my_graph.known_max_yv+1;
+      if(graphs[0][i].known_min_yv == graphs[0][i].known_max_yv)
+      {
+        target_disp_min_yv[i] = graphs[0][i].known_min_yv-1;
+        target_disp_max_yv[i] = graphs[0][i].known_max_yv+1;
+      }
+      else
+      {
+        target_disp_min_yv[i] = graphs[0][i].known_min_yv;
+        target_disp_max_yv[i] = graphs[0][i].known_max_yv;
+      }
+      target_disp_min_yv[i] = 0;
+      target_disp_max_yv[i] *= 1.1;
+      target_disp_ttl = target_disp_max_ttl;
     }
-    else
-    {
-      target_disp_min_yv = my_graph.known_min_yv;
-      target_disp_max_yv = my_graph.known_max_yv;
-    }
-    target_disp_min_yv = 0;
-    target_disp_max_yv *= 1.1;
-    target_disp_ttl = target_disp_max_ttl;
     limitGraph();
   }
 
@@ -388,8 +399,11 @@ var GamePlayScene = function(game, stage)
 
     target_disp_min_xv = 0;
     target_disp_max_xv = 0;
-    target_disp_min_yv = 0;
-    target_disp_max_yv = 0;
+    for(var i = 0; i < COIN_COUNT; i++)
+    {
+      target_disp_min_yv[i] = 0;
+      target_disp_max_yv[i] = 0;
+    }
     target_disp_ttl = 0;
     target_disp_max_ttl = 20;
 
@@ -564,8 +578,8 @@ var GamePlayScene = function(game, stage)
     graphs[SRC_GDAX][COIN_ETH].color = "#004488";
     graphs[SRC_KRAK][COIN_BTC].color = "#FAB915";
     graphs[SRC_GDAX][COIN_BTC].color = "#F5A400";
-    graphs[SRC_KRAK][COIN_LTC].color = "#C9C9C9";
-    graphs[SRC_GDAX][COIN_LTC].color = "#DFDFDF";
+    graphs[SRC_KRAK][COIN_LTC].color = "#494949";
+    graphs[SRC_GDAX][COIN_LTC].color = "#5F5F5F";
 
     eth_pressure_graph = new running_deriv_variable_graph();
     eth_pressure_graph.coin = COIN_ETH;
@@ -709,6 +723,11 @@ var GamePlayScene = function(game, stage)
       getDataPt(floor(to),my_graph,function(){enhancing = false;});
     });
 
+    var inert_callback = function(graph)
+    {
+      aggregatePurchases(graph);
+      limitGraph();
+    }
     var callback = function(graph)
     {
       graph.clampDisp();
@@ -718,8 +737,11 @@ var GamePlayScene = function(game, stage)
       graph.disp_max_yv *= 1.1;
       target_disp_min_xv = graph.disp_min_xv;
       target_disp_max_xv = graph.disp_max_xv;
-      target_disp_min_yv = my_graph.disp_min_yv; //<- "my_graph" distinction important
-      target_disp_max_yv = my_graph.disp_max_yv; //<- "my_graph" distinction important
+      for(var i = 0; i < COIN_COUNT; i++)
+      {
+        target_disp_min_yv[i] = graphs[0][i].disp_min_yv;
+        target_disp_max_yv[i] = graphs[0][i].disp_max_yv;
+      }
 
       aggregatePurchases(graph);
       limitGraph();
@@ -728,7 +750,11 @@ var GamePlayScene = function(game, stage)
       for(var j = 0; j < COIN_COUNT; j++)
         for(var k = 0; k < BLOCK_COUNT; k++)
         {
-          getDataBlock(k,i,j,graphs[i][j],block_n,callback);
+          switch(i)
+          {
+            case 0: getDataBlock(k,i,j,graphs[i][j],block_n,callback); break;
+            case 1: getDataBlock(k,i,j,graphs[i][j],block_n,inert_callback); break;
+          }
         }
 
     callback = function(graph)
@@ -775,8 +801,11 @@ var GamePlayScene = function(game, stage)
     {
       my_graph.disp_min_xv = lerp(my_graph.disp_min_xv,target_disp_min_xv,0.3);
       my_graph.disp_max_xv = lerp(my_graph.disp_max_xv,target_disp_max_xv,0.3);
-      my_graph.disp_min_yv = lerp(my_graph.disp_min_yv,target_disp_min_yv,0.3);
-      my_graph.disp_max_yv = lerp(my_graph.disp_max_yv,target_disp_max_yv,0.3);
+      for(var i = 0; i < COIN_COUNT; i++)
+      {
+        graphs[0][i].disp_min_yv = lerp(graphs[0][i].disp_min_yv,target_disp_min_yv[i],0.3);
+        graphs[0][i].disp_max_yv = lerp(graphs[0][i].disp_max_yv,target_disp_max_yv[i],0.3);
+      }
       alignGraphs();
       limitGraph();
       target_disp_ttl--;
@@ -785,8 +814,11 @@ var GamePlayScene = function(game, stage)
     {
       my_graph.disp_min_xv = target_disp_min_xv;
       my_graph.disp_max_xv = target_disp_max_xv;
-      my_graph.disp_min_yv = target_disp_min_yv;
-      my_graph.disp_max_yv = target_disp_max_yv;
+      for(var i = 0; i < COIN_COUNT; i++)
+      {
+        graphs[0][i].disp_min_yv = target_disp_min_yv[i];
+        graphs[0][i].disp_max_yv = target_disp_max_yv[i];
+      }
       alignGraphs();
       limitGraph();
     }
@@ -813,8 +845,13 @@ var GamePlayScene = function(game, stage)
     my_graph.draw(ctx);
     for(var i = 0; i < SRC_COUNT; i++)
       for(var j = 0; j < COIN_COUNT; j++)
-        graphs[i][j].draw(ctx);
-    eth_pressure_graph.draw(ctx);
+        if(j != my_graph.coin)
+          graphs[i][j].draw(ctx);
+    ctx.fillStyle = "rgba(255,255,255,0.5)";
+    ctx.fillRect(my_graph.x,my_graph.y,my_graph.w,my_graph.h);
+    for(var i = 0; i < SRC_COUNT; i++)
+      graphs[i][my_graph.coin].draw(ctx);
+    //eth_pressure_graph.draw(ctx);
 
     //cur price
     ctx.fillStyle = black;
@@ -967,7 +1004,7 @@ var GamePlayScene = function(game, stage)
 
     //window start/end (y) delim
       //start
-    y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, left_val);
+    y = round(mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, left_val));
     ctx.strokeStyle = black;
     ctx.beginPath();
     ctx.moveTo(my_graph.x             ,y);
@@ -981,7 +1018,7 @@ var GamePlayScene = function(game, stage)
 
       //end
     //val = my_graph.findqueryx(my_graph.disp_max_xv);
-    y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, right_val);
+    y = round(mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, right_val));
     ctx.strokeStyle = black;
     ctx.beginPath();
     ctx.moveTo(my_graph.x+my_graph.w/2,y);
