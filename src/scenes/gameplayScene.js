@@ -307,7 +307,6 @@ var GamePlayScene = function(game, stage)
         case BLOCK_HOUR:   inc = hr;   priority = 1; break;
         case BLOCK_MINUTE: inc = min;  priority = 0; break;
       }
-      if(inc != hr && inc != min) return;
       start = end-inc*n;
 
       var from = ticker(coin);
@@ -338,8 +337,9 @@ var GamePlayScene = function(game, stage)
             }
           }
         }})(xhr);
-        if(start+inc*200 < end) xhr.open("GET","https://api.gdax.com/products/"+from+"-USD/candles?start="+new Date(start).toISOString()+"&end="+new Date(start+inc*200).toISOString()+"&granularity="+(inc/1000),true);
-        else                    xhr.open("GET","https://api.gdax.com/products/"+from+"-USD/candles?start="+new Date(start).toISOString()+"&end="+end.toISOString()+"&granularity="+(inc/1000),true);
+        if(start+inc*200 < end) xhr.url = "https://api.gdax.com/products/"+from+"-USD/candles?start="+new Date(start).toISOString()+"&end="+new Date(start+inc*200).toISOString()+"&granularity="+(inc/1000);
+        else                    xhr.url = "https://api.gdax.com/products/"+from+"-USD/candles?start="+new Date(start).toISOString()+"&end="+end.toISOString()+"&granularity="+(inc/1000);
+        xhr.open("GET",xhr.url,true);
         req_q.push(xhr);
         start += inc*200;
         wait++;

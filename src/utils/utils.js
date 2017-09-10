@@ -857,6 +857,34 @@ var variable_graph = function()
   self.insertDataBlockNext = function(x,y,i,p)
   {
     self.dirty = true;
+
+    //verify order
+    var ordered = true;
+    for(var j = 1; j < x.length; j++)
+    {
+      if(x[j] < x[j-1]) ordered = false;
+    }
+    if(!ordered)
+    {
+      var newx = [];
+      var newy = [];
+      while(x.length) //holy inefficient...
+      {
+        var minj = 0;
+        for(var j = 1; j < x.length; j++)
+        {
+          if(x[minj] > x[j])
+            minj = j;
+        }
+        newx.push(x[minj]);
+        newy.push(y[minj]);
+        x.splice(minj,1);
+        y.splice(minj,1);
+      }
+      x = newx;
+      y = newy;
+    }
+
     if(x.length)
     {
       if(!self.yv.length) self.known_min_yv = y[0];
