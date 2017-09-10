@@ -750,6 +750,7 @@ var GamePlayScene = function(game, stage)
       for(var j = 0; j < COIN_COUNT; j++)
         for(var k = 0; k < BLOCK_COUNT; k++)
         {
+          if(i == SRC_GDAX && k != BLOCK_MINUTE) continue; //don't waste getting old data for both graphs
           switch(i)
           {
             case 0: getDataBlock(k,i,j,graphs[i][j],block_n,callback); break;
