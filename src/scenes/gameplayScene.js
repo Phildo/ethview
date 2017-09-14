@@ -293,7 +293,7 @@ var GamePlayScene = function(game, stage)
         }
       }})(xhr);
       xhr.open("GET","https://min-api.cryptocompare.com/data/histo"+span+"?fsym="+from+"&tsym="+to+"&limit="+n+"&aggregate=1&extraParams="+appname,true);
-      req_q.push(xhr);
+      xhr.send();//req_q.push(xhr);
     }
     else if(src == SRC_GDAX)
     {
@@ -699,16 +699,27 @@ var GamePlayScene = function(game, stage)
       target_disp_ttl = target_disp_max_ttl;
       limitGraph();
       my_graph.dirty = true;
-      getDataBlock(BLOCK_MINUTE,SRC_KRAK,my_graph.coin,my_graph,block_n,function()
+      var callback = function(graph)
       {
-        delta = my_graph.disp_max_xv-my_graph.disp_min_xv;
-        target_disp_max_xv = my_graph.xv[my_graph.xv.length-1];
-        target_disp_min_xv = my_graph.disp_max_xv - delta;
+        delta = graph.disp_max_xv-graph.disp_min_xv;
+        target_disp_max_xv = graph.xv[graph.xv.length-1];
+        target_disp_min_xv = graph.disp_max_xv - delta;
         target_disp_ttl = target_disp_max_ttl;
-        aggregatePurchases(my_graph);
+        aggregatePurchases(graph);
         limitGraph();
         loading_latest = false;
-      });
+      }
+      for(var j = 0; j < COIN_COUNT; j++)
+      {
+        var i = SRC_KRAK;
+        var k = BLOCK_MINUTE;
+        switch(i)
+        {
+          case 0: getDataBlock(k,i,j,graphs[i][j],block_n,callback); break;
+          case 1: getDataBlock(k,i,j,graphs[i][j],block_n,inert_callback); break;
+        }
+      }
+
     });
     x += w+s;
     enhance_btn = new ButtonBox(x,y,w,h,function()
