@@ -1029,6 +1029,395 @@ var variable_graph = function()
 }
 
 //data pts arbitrarily spaced
+var variable_purchases_graph = function(purchases)
+{
+  var self = this;
+  self.x = 0;
+  self.y = 0;
+  self.w = 0;
+  self.h = 0;
+  self.wx = 0;
+  self.wy = 0;
+  self.ww = 0;
+  self.wh = 0;
+
+  self.purchases = purchases;
+  self.purchases_yv = [];
+  self.yv = [];
+  self.xv = [];
+  self.priority = [];
+  /*
+  //test data
+  var n = 10;
+  for(var i = 0; i < n; i++)
+  {
+    self.xv.push(i);
+    self.yv.push(sin(self.xv[self.xv.length-1]));
+  }
+  for(var i = 0; i < n*10; i++)
+  {
+    self.xv.push(self.xv[self.xv.length-1]+0.1);
+    self.yv.push(sin(self.xv[self.xv.length-1]));
+  }
+  for(var i = 0; i < n; i++)
+  {
+    self.xv.push(self.xv[self.xv.length-1]+1);
+    self.yv.push(sin(self.xv[self.xv.length-1]));
+  }
+  //end test data
+  self.disp_min_xv = self.xv[0];
+  self.disp_max_xv = self.xv[self.xv.length-1];
+  */
+  self.purchases_known_min_yv = 0;
+  self.purchases_known_max_yv = 0;
+  self.known_min_yv = 0;
+  self.known_max_yv = 0;
+  self.disp_min_xv = 0;
+  self.disp_max_xv = 1;
+  self.purchases_disp_min_yv = 0;
+  self.purchases_disp_max_yv = 1;
+  self.disp_min_yv = 0;
+  self.disp_max_yv = 1;
+
+  self.clampDispX = function()
+  {
+    self.dirty = true;
+    if(self.xv.length == 0)
+    {
+      self.disp_min_xv = -1;
+      self.disp_max_xv = 1;
+      return;
+    }
+    self.disp_min_xv = self.xv[0];
+    if(self.xv.length-1 < 0)
+    {
+      self.disp_max_xv = self.disp_min_xv;
+      return;
+    }
+    self.disp_max_xv = self.xv[self.xv.length-1];
+
+    if(self.disp_min_yv == self.disp_max_yv)
+    {
+      self.disp_min_yv -= 1;
+      self.disp_max_yv += 1;
+    }
+  }
+
+  self.findRangeY = function()
+  {
+    if(self.yv.length == 0)
+    {
+      self.known_min_yv = 0;
+      self.known_max_yv = 0;
+      return;
+    }
+    self.known_min_yv = self.yv[0];
+    self.known_max_yv = self.yv[0];
+    for(var i = 1; i < self.yv.length; i++)
+    {
+      if(self.yv[i] < self.known_min_yv) self.known_min_yv = self.yv[i];
+      if(self.yv[i] > self.known_max_yv) self.known_max_yv = self.yv[i];
+    }
+  }
+
+  self.clampDispY = function()
+  {
+    self.dirty = true;
+    if(self.known_min_yv == self.known_max_yv)
+    {
+      self.disp_min_yv = self.known_min_yv-1;
+      self.disp_max_yv = self.known_max_yv+1;
+    }
+    else
+    {
+      self.disp_min_yv = self.known_min_yv;
+      self.disp_max_yv = self.known_max_yv;
+    }
+  }
+
+  self.clampDisp = function()
+  {
+    self.clampDispX();
+    self.clampDispY();
+  }
+
+  self.cache;
+  self.dirty = true;
+
+  self.genCache = function()
+  {
+    self.cache = GenIcon(self.w,self.h);
+  }
+
+  self.verifyOrder = function()
+  {
+    for(var i = 0; i < self.xv.length-1; i++)
+      if(self.xv[i] > self.xv[i+1]) return false;
+    return true;
+  }
+
+  self.insertDataNext = function(x,y,i,p)
+  {
+    self.dirty = true;
+
+    if(!self.yv.length || y < self.known_min_yv) self.known_min_yv = y;
+    if(!self.yv.length || y > self.known_max_yv) self.known_max_yv = y;
+
+    i = self.nextibeforex(x,i)+1;
+    if(self.xv[i] == x)
+    {
+      if(p <= self.priority[i])
+      {
+        self.yv[i] = y;
+        self.priority[i] = p;
+      }
+    }
+    else
+    {
+      if(i == 0 || p <= self.priority[i-1] || p <= self.priority[i])
+      {
+        self.xv.splice(i,0,x);
+        self.yv.splice(i,0,y);
+        self.priority.splice(i,0,p);
+      }
+    }
+
+    self.calcPurchases();
+
+    return i;
+  }
+
+  self.insertDataFind = function(x,y,min,max,p)
+  {
+    var i = self.findibeforex(x,min,max);
+    return self.insertDataNext(x,y,i,p);
+  }
+
+  self.insertDataBlockNext = function(x,y,i,p)
+  {
+    self.dirty = true;
+
+    //verify order
+    var ordered = true;
+    for(var j = 1; j < x.length; j++)
+    {
+      if(x[j] < x[j-1]) ordered = false;
+    }
+    if(!ordered)
+    {
+      var newx = [];
+      var newy = [];
+      while(x.length) //holy inefficient...
+      {
+        var minj = 0;
+        for(var j = 1; j < x.length; j++)
+        {
+          if(x[minj] > x[j])
+            minj = j;
+        }
+        newx.push(x[minj]);
+        newy.push(y[minj]);
+        x.splice(minj,1);
+        y.splice(minj,1);
+      }
+      x = newx;
+      y = newy;
+    }
+
+    if(x.length)
+    {
+      if(!self.yv.length) self.known_min_yv = y[0];
+      if(!self.yv.length) self.known_max_yv = y[0];
+    }
+    for(var j = 0; j < x.length; j++)
+    {
+      if(y[j] < self.known_min_yv) self.known_min_yv = y[j];
+      if(y[j] > self.known_max_yv) self.known_max_yv = y[j];
+
+      i = self.nextibeforex(x[j],i)+1;
+
+      if(self.xv[i] == x[j])
+      {
+        if(p <= self.priority[i])
+          self.yv[i] = y[j];
+      }
+      else
+      {
+        if(i == 0 || p <= self.priority[i-1] || p <= self.priority[i])
+        {
+          self.xv.splice(i,0,x[j]);
+          self.yv.splice(i,0,y[j]);
+          self.priority.splice(i,0,p);
+        }
+      }
+    }
+
+    self.calcPurchases();
+
+    return i;
+  }
+
+  self.insertDataBlockFind = function(x,y,min,max,p)
+  {
+    var i = self.findibeforex(x,min,max);
+    return self.insertDataBlockNext(x,y,i,p);
+  }
+
+  self.findqueryxt = function(xt,min,max)
+  {
+    var x = mapVal(0,1,self.disp_min_xv,self.disp_max_xv,xt);
+    return self.findqueryx(x,min,max);
+  }
+
+  self.nextqueryxt = function(xt,i)
+  {
+    var x = mapVal(0,1,self.disp_min_xv,self.disp_max_xv,xt);
+    return self.nextqueryx(x,i);
+  }
+
+  self.findqueryx = function(x,min,max)
+  {
+    var xi = self.findibeforex(x,min,max);
+    if(xi == -1) return self.yv[0];
+    if(xi == self.xv.length-1) return self.yv[xi];
+    var xl = mapVal(self.xv[xi],self.xv[xi+1],0,1,x)
+    return lerp(self.yv[xi],self.yv[xi+1],xl);
+  }
+
+  self.nextqueryx = function(x,i)
+  {
+    var xi = self.nextibeforex(x,i);
+    if(xi == -1) return self.yv[0];
+    if(xi == self.xv.length-1) return self.yv[xi];
+    var xl = mapVal(self.xv[xi],self.xv[xi+1],0,1,x)
+    return lerp(self.yv[xi],self.yv[xi+1],xl);
+  }
+
+  self.findibeforex = function(x,min,max)
+  {
+    if(!min) min = -1;
+    if(!max) max = self.xv.length;
+    var i = min;
+    while(min < max-1)
+    {
+      i = min+ceil((max-min)/2);
+           if(x > self.xv[i]) min = i;
+      else if(x < self.xv[i]) max = i;
+      else //found precisely
+      {
+        while(i > 0)
+        {
+          if(self.xv[i] < x) return i;
+          i--;
+        }
+        return 0;
+      }
+    }
+    return min;
+  }
+
+  self.nextibeforex = function(x,i)
+  {
+    for(; i < self.xv.length; i++)
+      if(x <= self.xv[i]) return i-1;
+    return self.xv.length-1;
+  }
+
+  self.calcPurchases = function()
+  {
+    var fiat = 0;
+    var coin = 0;
+    var p_i = 0;
+    self.purchases_known_min_yv = 0;
+    self.purchases_known_max_yv = 0;
+    for(var i = 0; i < self.yv.length; i++)
+    {
+      while(self.purchases[p_i] && self.xv[i] > self.purchases[p_i].ts)
+      {
+        if(self.purchases[p_i].amt != 0)
+        {
+          coin += self.purchases[p_i].amt;
+          fiat -= self.purchases[p_i].amt*self.purchases[p_i].rate;
+        }
+        p_i++;
+      }
+      self.purchases_yv[i] = fiat+coin*self.yv[i];
+      if(self.purchases_yv[i] < self.purchases_known_min_yv) self.purchases_known_min_yv = self.purchases_yv[i];
+      if(self.purchases_yv[i] > self.purchases_known_max_yv) self.purchases_known_max_yv = self.purchases_yv[i];
+    }
+    self.purchases_disp_min_yv = self.purchases_known_min_yv;
+    self.purchases_disp_max_yv = self.purchases_known_max_yv*1.1;
+  }
+
+  self.draw = function(purchases,ctx)
+  {
+    if(true)//self.dirty)
+    {
+      self.cache.context.clearRect(0,0,self.w,self.h);
+      //v = value
+      //p = pixel
+      //t = normalized range from min to max
+      //l = lerp to next val
+      //i = index
+      var xv = 0; //not actually used!
+      var yv;
+      var xp;
+      var yp;
+      var xl;
+      var xi;
+
+      self.cache.context.strokeStyle = self.color;
+      self.cache.context.beginPath();
+      xi = self.nextibeforex(self.disp_min_xv,0);
+      xl = mapVal(self.xv[xi],self.xv[xi+1],0,1,self.disp_min_xv)
+      yv = lerp(self.yv[xi],self.yv[xi+1],xl);
+      yp = mapVal(self.disp_min_yv, self.disp_max_yv, self.h, 0, yv);
+      self.cache.context.moveTo(0,yp);
+      for(var j = 1; j < self.w; j++)
+      {
+        xv = mapVal(0,self.w,self.disp_min_xv,self.disp_max_xv,j);
+        xi = self.nextibeforex(xv,xi);
+        xl = mapVal(self.xv[xi],self.xv[xi+1],0,1,xv)
+        yv = lerp(self.yv[xi],self.yv[xi+1],xl);
+        xp = j;
+        yp = mapVal(self.disp_min_yv, self.disp_max_yv, self.h, 0, yv);
+        self.cache.context.lineTo(xp,yp);
+      }
+      self.cache.context.stroke();
+
+      if(purchases)
+      {
+        self.cache.context.strokeStyle = self.color;
+        self.cache.context.beginPath();
+        xi = self.nextibeforex(self.disp_min_xv,0);
+        xl = mapVal(self.xv[xi],self.xv[xi+1],0,1,self.disp_min_xv)
+        yv = lerp(self.purchases_yv[xi],self.purchases_yv[xi+1],xl);
+        yp = mapVal(self.purchases_disp_min_yv, self.purchases_disp_max_yv, self.h, 0, yv);
+        self.cache.context.moveTo(0,yp);
+        for(var j = 1; j < self.w; j++)
+        {
+          xv = mapVal(0,self.w,self.disp_min_xv,self.disp_max_xv,j);
+          xi = self.nextibeforex(xv,xi);
+          xl = mapVal(self.xv[xi],self.xv[xi+1],0,1,xv)
+          yv = lerp(self.purchases_yv[xi],self.purchases_yv[xi+1],xl);
+          xp = j;
+          yp = mapVal(self.purchases_disp_min_yv, self.purchases_disp_max_yv, self.h, 0, yv);
+          self.cache.context.lineTo(xp,yp);
+        }
+        self.cache.context.stroke();
+      }
+
+      self.dirty = false
+    }
+
+    ctx.drawImage(self.cache,self.x,self.y,self.w,self.h);
+    ctx.strokeStyle = "#000000";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(self.x,self.y,self.w,self.h);
+  }
+}
+
+//data pts arbitrarily spaced
 var running_deriv_variable_graph = function()
 {
   var self = this;
@@ -1212,6 +1601,7 @@ var running_deriv_variable_graph = function()
     }
     if(self.yd[i] < self.known_min_yv) self.known_min_yv = self.yd[i];
     if(self.yd[i] > self.known_max_yv) self.known_max_yv = self.yd[i];
+
     return i;
   }
 

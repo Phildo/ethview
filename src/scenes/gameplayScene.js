@@ -158,13 +158,13 @@ var GamePlayScene = function(game, stage)
     graph.total_owned = 0;
     graph.total_spent_val = 0;
     graph.total_owned_val = 0;
-    var tick = coin_ticker(graph.coin);
-    if(purchases && purchases[tick])
+    var coin = coin_ticker(graph.coin);
+    if(purchases && purchases[coin])
     {
-      for(var i = 0; i < purchases[tick].length; i++)
+      for(var i = 0; i < purchases[coin].length; i++)
       {
-        graph.total_owned += purchases[tick][i].amt;
-        graph.total_spent_val += purchases[tick][i].spent;
+        graph.total_owned += purchases[coin][i].amt;
+        graph.total_spent_val += purchases[coin][i].spent;
       }
     }
     graph.total_owned_val = graph.yv[graph.yv.length-1]*graph.total_owned;
@@ -603,7 +603,7 @@ var GamePlayScene = function(game, stage)
     for(var i = 0; i < SRC_COUNT; i++)
       graphs[i] = [];
 
-    graphs[SRC_KRAK][COIN_ETH] = new variable_graph();
+    graphs[SRC_KRAK][COIN_ETH] = new variable_purchases_graph(purchases[coin_ticker(COIN_ETH)]);
     graphs[SRC_KRAK][COIN_ETH].src = SRC_KRAK;
     graphs[SRC_KRAK][COIN_ETH].coin = COIN_ETH;
     graphs[SRC_KRAK][COIN_ETH].fiat = FIAT_USD;
@@ -622,7 +622,7 @@ var GamePlayScene = function(game, stage)
       for(var j = 0; j < COIN_COUNT; j++)
       {
         if(i == 0 && j == 0) continue; //already done
-        graphs[i][j] = new variable_graph();
+        graphs[i][j] = new variable_purchases_graph(purchases[coin_ticker(j)]);
         graphs[i][j].src = i;
         graphs[i][j].coin = j;
         graphs[i][j].fiat = FIAT_USD;
@@ -952,16 +952,17 @@ var GamePlayScene = function(game, stage)
     var val;
     var amt;
 
-    my_graph.draw(ctx);
     for(var i = 0; i < SRC_COUNT; i++)
       for(var j = 0; j < COIN_COUNT; j++)
         if(j != my_graph.coin)
-          graphs[i][j].draw(ctx);
+          graphs[i][j].draw(false,ctx);
     ctx.fillStyle = "rgba(255,255,255,0.8)";
     ctx.fillRect(my_graph.x,my_graph.y,my_graph.w,my_graph.h);
     eth_btc_graph.draw(ctx);
     for(var i = 0; i < SRC_COUNT; i++)
-      graphs[i][my_graph.coin].draw(ctx);
+      if(graphs[i][my_graph.coin] != my_graph)
+        graphs[i][my_graph.coin].draw(false,ctx);
+    my_graph.draw(keys.cmd,ctx);
     //eth_pressure_graph.draw(ctx);
 
     //cur price
