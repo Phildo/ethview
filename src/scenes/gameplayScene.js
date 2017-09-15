@@ -890,17 +890,10 @@ var GamePlayScene = function(game, stage)
       aggregatePurchases(graph);
       limitGraph();
     }
-    for(var i = 0; i < SRC_COUNT; i++)
-      for(var j = 0; j < COIN_COUNT; j++)
-        for(var k = 0; k < BLOCK_COUNT; k++)
-        {
-          if(i == SRC_GDAX && k != BLOCK_MINUTE) continue; //don't waste getting old data for both graphs
-          switch(i)
-          {
-            case 0: getDataBlock(k,graphs[i][j],block_n,callback); break;
-            case 1: getDataBlock(k,graphs[i][j],block_n,inert_callback); break;
-          }
-        }
+    var i = SRC_KRAK;
+    for(var j = 0; j < COIN_COUNT; j++)
+      for(var k = 0; k < BLOCK_COUNT; k++)
+        getDataBlock(k,graphs[i][j],block_n,callback);
     for(var k = 0; k < BLOCK_COUNT; k++)
       getDataBlock(k,eth_btc_graph,block_n,callback);
 
