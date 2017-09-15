@@ -46,6 +46,11 @@ var GamePlayScene = function(game, stage)
   var COIN_COUNT = ENUM; ENUM++;
 
   ENUM = 0;
+  var FIAT_USD = ENUM; ENUM++;
+  var FIAT_BTC = ENUM; ENUM++;
+  var FIAT_COUNT = ENUM; ENUM++;
+
+  ENUM = 0;
   var BLOCK_MINUTE = ENUM; ENUM++;
   var BLOCK_HOUR   = ENUM; ENUM++;
   var BLOCK_DAY    = ENUM; ENUM++;
@@ -57,6 +62,7 @@ var GamePlayScene = function(game, stage)
   var SRC_COUNT = ENUM; ENUM++;
 
   var graphs = [];
+  var eth_btc_graph;
   var my_graph;
   var graph_cover;
 
@@ -100,10 +106,12 @@ var GamePlayScene = function(game, stage)
   var target_disp_max_xv;
   var target_disp_min_yv = [];
   var target_disp_max_yv = [];
+  var target_disp_min_yv_eth_btc;
+  var target_disp_max_yv_eth_btc;
   var target_disp_ttl;
   var target_disp_max_ttl;
 
-  var ticker = function(coin)
+  var coin_ticker = function(coin)
   {
     switch(coin)
     {
@@ -112,6 +120,16 @@ var GamePlayScene = function(game, stage)
       case COIN_LTC: return "LTC"; break;
     }
     return "ETH";
+  }
+
+  var fiat_ticker = function(fiat)
+  {
+    switch(fiat)
+    {
+      case FIAT_USD: return "USD"; break;
+      case FIAT_BTC: return "BTC"; break;
+    }
+    return "USD";
   }
 
   var alignGraphs = function()
@@ -127,6 +145,9 @@ var GamePlayScene = function(game, stage)
         graphs[i][j].disp_max_yv = graphs[0][j].disp_max_yv;
       }
     }
+    eth_btc_graph.disp_min_xv = my_graph.disp_min_xv;
+    eth_btc_graph.disp_max_xv = my_graph.disp_max_xv;
+    eth_btc_graph.span = my_graph.span;
     eth_pressure_graph.disp_min_xv = my_graph.disp_min_xv;
     eth_pressure_graph.disp_max_xv = my_graph.disp_max_xv;
     eth_pressure_graph.span = my_graph.span;
@@ -137,7 +158,7 @@ var GamePlayScene = function(game, stage)
     graph.total_owned = 0;
     graph.total_spent_val = 0;
     graph.total_owned_val = 0;
-    var tick = ticker(graph.coin);
+    var tick = coin_ticker(graph.coin);
     if(purchases && purchases[tick])
     {
       for(var i = 0; i < purchases[tick].length; i++)
@@ -158,6 +179,8 @@ var GamePlayScene = function(game, stage)
       target_disp_min_yv[i] = graphs[0][i].disp_min_yv;
       target_disp_max_yv[i] = graphs[0][i].disp_max_yv;
     }
+    target_disp_min_yv_eth_btc = eth_btc_graph.disp_min_yv;
+    target_disp_max_yv_eth_btc = 0.1;//eth_btc_graph.disp_max_yv;
   }
 
   var limitGraph = function()
@@ -186,12 +209,15 @@ var GamePlayScene = function(game, stage)
 
   var stretchGraph = function()
   {
+    var index;
+    var lowest;
+    var highest;
+    var val;
     for(var i = 0; i < COIN_COUNT; i++)
     {
-      var index = graphs[0][i].findibeforex(graphs[0][i].disp_min_xv);
-      var lowest = graphs[0][i].yv[index];
-      var highest = graphs[0][i].yv[index];
-      var val;
+      index = graphs[0][i].findibeforex(graphs[0][i].disp_min_xv);
+      lowest = graphs[0][i].yv[index];
+      highest = graphs[0][i].yv[index];
       for(var j = 0; j <= graphs[0][i].w; j++)
       {
         val = graphs[0][i].nextqueryxt(j/graphs[0][i].w,index);
@@ -203,8 +229,24 @@ var GamePlayScene = function(game, stage)
       highest += delta*0.1;
       target_disp_min_yv[i] = lowest;
       target_disp_max_yv[i] = highest;
-      target_disp_ttl = target_disp_max_ttl;
     }
+
+    index = eth_btc_graph.findibeforex(eth_btc_graph.disp_min_xv);
+    lowest = eth_btc_graph.yv[index];
+    highest = eth_btc_graph.yv[index];
+    for(var j = 0; j <= eth_btc_graph.w; j++)
+    {
+      val = eth_btc_graph.nextqueryxt(j/eth_btc_graph.w,index);
+      if(val < lowest)  lowest  = val;
+      if(val > highest) highest = val;
+    }
+    delta = highest-lowest;
+    lowest  -= delta*0.1;
+    highest += delta*0.1;
+    target_disp_min_yv_eth_btc = lowest;
+    target_disp_max_yv_eth_btc = highest;
+
+    target_disp_ttl = target_disp_max_ttl;
     limitGraph();
   }
 
@@ -224,15 +266,29 @@ var GamePlayScene = function(game, stage)
       }
       target_disp_min_yv[i] = 0;
       target_disp_max_yv[i] *= 1.1;
-      target_disp_ttl = target_disp_max_ttl;
     }
+
+    if(eth_btc_graph.known_min_yv == eth_btc_graph.known_max_yv)
+    {
+      target_disp_min_yv_eth_btc = eth_btc_graph.known_min_yv-1;
+      target_disp_max_yv_eth_btc = eth_btc_graph.known_max_yv+1;
+    }
+    else
+    {
+      target_disp_min_yv_eth_btc = eth_btc_graph.known_min_yv;
+      target_disp_max_yv_eth_btc = 0.1;//eth_btc_graph.known_max_yv;
+    }
+    target_disp_min_yv_eth_btc = 0;
+    //target_disp_max_yv_eth_btc *= 1.1;
+
+    target_disp_ttl = target_disp_max_ttl;
     limitGraph();
   }
 
   var getDataPt = function(ts,graph,callback)
   {
-    var from = ticker(graph.coin);
-    var to = "USD";
+    var from = coin_ticker(graph.coin);
+    var to = fiat_ticker(graph.fiat);
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = (function a(xhr){return function()
     {
@@ -253,9 +309,9 @@ var GamePlayScene = function(game, stage)
     req_q.push(xhr);
   }
 
-  var getDataBlock = function(block,src,coin,graph,n,callback)
+  var getDataBlock = function(block,graph,n,callback)
   {
-    if(src == SRC_KRAK)
+    if(graph.src == SRC_KRAK)
     {
       var span = "day";
       var priority = 3;
@@ -266,8 +322,8 @@ var GamePlayScene = function(game, stage)
         case BLOCK_MINUTE: span = "minute"; priority = 0; break;
       }
 
-      var from = ticker(coin);
-      var to = "USD";
+      var from = coin_ticker(graph.coin);
+      var to = fiat_ticker(graph.fiat);
       var xhr = new XMLHttpRequest();
       xhr.onreadystatechange = (function a(xhr){return function()
       {
@@ -295,7 +351,7 @@ var GamePlayScene = function(game, stage)
       xhr.open("GET","https://min-api.cryptocompare.com/data/histo"+span+"?fsym="+from+"&tsym="+to+"&limit="+n+"&aggregate=1&extraParams="+appname,true);
       xhr.send();//req_q.push(xhr);
     }
-    else if(src == SRC_GDAX)
+    else if(graph.src == SRC_GDAX)
     {
       var start;
       var end = new Date();
@@ -309,7 +365,8 @@ var GamePlayScene = function(game, stage)
       }
       start = end-inc*n;
 
-      var from = ticker(coin);
+      var from = coin_ticker(graph.coin);
+      var to = fiat_ticker(graph.fiat);
       var wait = 1;
       while(start < end)
       {
@@ -337,8 +394,8 @@ var GamePlayScene = function(game, stage)
             }
           }
         }})(xhr);
-        if(start+inc*200 < end) xhr.url = "https://api.gdax.com/products/"+from+"-USD/candles?start="+new Date(start).toISOString()+"&end="+new Date(start+inc*200).toISOString()+"&granularity="+(inc/1000);
-        else                    xhr.url = "https://api.gdax.com/products/"+from+"-USD/candles?start="+new Date(start).toISOString()+"&end="+end.toISOString()+"&granularity="+(inc/1000);
+        if(start+inc*200 < end) xhr.url = "https://api.gdax.com/products/"+from+"-"+to+"/candles?start="+new Date(start).toISOString()+"&end="+new Date(start+inc*200).toISOString()+"&granularity="+(inc/1000);
+        else                    xhr.url = "https://api.gdax.com/products/"+from+"-"+to+"/candles?start="+new Date(start).toISOString()+"&end="+end.toISOString()+"&granularity="+(inc/1000);
         xhr.open("GET",xhr.url,true);
         req_q.push(xhr);
         start += inc*200;
@@ -347,9 +404,10 @@ var GamePlayScene = function(game, stage)
     }
   }
 
-  var getPressureDataBlock = function(page,coin,graph,callback)
+  var getPressureDataBlock = function(page,graph,callback)
   {
-    var from = ticker(coin);
+    var from = coin_ticker(graph.coin);
+    var to = fiat_ticker(graph.fiat);
     var xhr = new XMLHttpRequest();
     xhr.onreadystatechange = (function a(xhr){return function()
     {
@@ -376,7 +434,7 @@ var GamePlayScene = function(game, stage)
       }
     }})(xhr);
 
-    xhr.open("GET","https://api.gdax.com/products/"+from+"-USD/trades?before="+page+"&limit=100",true);
+    xhr.open("GET","https://api.gdax.com/products/"+from+"-"+to+"/trades?before="+page+"&limit=100",true);
     req_q.push(xhr);
   }
 
@@ -404,6 +462,8 @@ var GamePlayScene = function(game, stage)
       target_disp_min_yv[i] = 0;
       target_disp_max_yv[i] = 0;
     }
+    target_disp_min_yv_eth_btc = 0;
+    target_disp_max_yv_eth_btc = 0;
     target_disp_ttl = 0;
     target_disp_max_ttl = 20;
 
@@ -544,7 +604,9 @@ var GamePlayScene = function(game, stage)
       graphs[i] = [];
 
     graphs[SRC_KRAK][COIN_ETH] = new variable_graph();
+    graphs[SRC_KRAK][COIN_ETH].src = SRC_KRAK;
     graphs[SRC_KRAK][COIN_ETH].coin = COIN_ETH;
+    graphs[SRC_KRAK][COIN_ETH].fiat = FIAT_USD;
     graphs[SRC_KRAK][COIN_ETH].wx = 0;
     graphs[SRC_KRAK][COIN_ETH].wy = -0.10;
     graphs[SRC_KRAK][COIN_ETH].ww = cam.ww-0.1;
@@ -561,7 +623,9 @@ var GamePlayScene = function(game, stage)
       {
         if(i == 0 && j == 0) continue; //already done
         graphs[i][j] = new variable_graph();
+        graphs[i][j].src = i;
         graphs[i][j].coin = j;
+        graphs[i][j].fiat = FIAT_USD;
         graphs[i][j].wx = graphs[SRC_KRAK][COIN_ETH].wx;
         graphs[i][j].wy = graphs[SRC_KRAK][COIN_ETH].wy;
         graphs[i][j].ww = graphs[SRC_KRAK][COIN_ETH].ww;
@@ -581,8 +645,22 @@ var GamePlayScene = function(game, stage)
     graphs[SRC_KRAK][COIN_LTC].color = "#494949";
     graphs[SRC_GDAX][COIN_LTC].color = "#5F5F5F";
 
+    eth_btc_graph = new variable_graph();
+    eth_btc_graph.src = SRC_KRAK;
+    eth_btc_graph.coin = COIN_ETH;
+    eth_btc_graph.fiat = FIAT_BTC;
+    eth_btc_graph.wx = 0;
+    eth_btc_graph.wy = -0.10;
+    eth_btc_graph.ww = cam.ww-0.1;
+    eth_btc_graph.wh = cam.wh-0.3;
+    screenSpace(cam,canv,eth_btc_graph);
+    eth_btc_graph.genCache();
+    eth_btc_graph.color = "#00FF00";
+
     eth_pressure_graph = new running_deriv_variable_graph();
+    eth_pressure_graph.src = SRC_GDAX;
     eth_pressure_graph.coin = COIN_ETH;
+    eth_pressure_graph.fiat = FIAT_USD;
     eth_pressure_graph.wx = 0;
     eth_pressure_graph.wy = -0.10;
     eth_pressure_graph.ww = cam.ww-0.1;
@@ -715,10 +793,12 @@ var GamePlayScene = function(game, stage)
         var k = BLOCK_MINUTE;
         switch(i)
         {
-          case 0: getDataBlock(k,i,j,graphs[i][j],block_n,callback); break;
-          case 1: getDataBlock(k,i,j,graphs[i][j],block_n,inert_callback); break;
+          case 0: getDataBlock(k,graphs[i][j],block_n,callback); break;
+          case 1: getDataBlock(k,graphs[i][j],block_n,inert_callback); break;
         }
       }
+      var k = BLOCK_MINUTE;
+      getDataBlock(k,eth_btc_graph,block_n,callback);
 
     });
     x += w+s;
@@ -753,6 +833,8 @@ var GamePlayScene = function(game, stage)
         target_disp_min_yv[i] = graphs[0][i].disp_min_yv;
         target_disp_max_yv[i] = graphs[0][i].disp_max_yv;
       }
+      target_disp_min_yv_eth_btc = eth_btc_graph.disp_min_yv;
+      target_disp_max_yv_eth_btc = 0.1;//eth_btc_graph.disp_max_yv;
 
       aggregatePurchases(graph);
       limitGraph();
@@ -764,10 +846,12 @@ var GamePlayScene = function(game, stage)
           if(i == SRC_GDAX && k != BLOCK_MINUTE) continue; //don't waste getting old data for both graphs
           switch(i)
           {
-            case 0: getDataBlock(k,i,j,graphs[i][j],block_n,callback); break;
-            case 1: getDataBlock(k,i,j,graphs[i][j],block_n,inert_callback); break;
+            case 0: getDataBlock(k,graphs[i][j],block_n,callback); break;
+            case 1: getDataBlock(k,graphs[i][j],block_n,inert_callback); break;
           }
         }
+    for(var k = 0; k < BLOCK_COUNT; k++)
+      getDataBlock(k,eth_btc_graph,block_n,callback);
 
     callback = function(graph)
     {
@@ -775,7 +859,7 @@ var GamePlayScene = function(game, stage)
     }
     for(var i = 0; i < 1; i++)
     {
-      setTimeout(function(i){return function(){getPressureDataBlock((i+1),COIN_ETH,eth_pressure_graph,callback)}}(i),1000*(i+1));
+      setTimeout(function(i){return function(){getPressureDataBlock((i+1),eth_pressure_graph,callback)}}(i),1000*(i+1));
     }
   };
 
@@ -828,6 +912,8 @@ var GamePlayScene = function(game, stage)
         graphs[0][i].disp_min_yv = lerp(graphs[0][i].disp_min_yv,target_disp_min_yv[i],0.3);
         graphs[0][i].disp_max_yv = lerp(graphs[0][i].disp_max_yv,target_disp_max_yv[i],0.3);
       }
+      eth_btc_graph.disp_min_yv = lerp(eth_btc_graph.disp_min_yv,target_disp_min_yv_eth_btc,0.3);
+      eth_btc_graph.disp_max_yv = lerp(eth_btc_graph.disp_max_yv,target_disp_max_yv_eth_btc,0.3);
       alignGraphs();
       limitGraph();
       target_disp_ttl--;
@@ -841,6 +927,8 @@ var GamePlayScene = function(game, stage)
         graphs[0][i].disp_min_yv = target_disp_min_yv[i];
         graphs[0][i].disp_max_yv = target_disp_max_yv[i];
       }
+      eth_btc_graph.disp_min_yv = target_disp_min_yv_eth_btc;
+      eth_btc_graph.disp_max_yv = target_disp_max_yv_eth_btc;
       alignGraphs();
       limitGraph();
     }
@@ -871,6 +959,7 @@ var GamePlayScene = function(game, stage)
           graphs[i][j].draw(ctx);
     ctx.fillStyle = "rgba(255,255,255,0.8)";
     ctx.fillRect(my_graph.x,my_graph.y,my_graph.w,my_graph.h);
+    eth_btc_graph.draw(ctx);
     for(var i = 0; i < SRC_COUNT; i++)
       graphs[i][my_graph.coin].draw(ctx);
     //eth_pressure_graph.draw(ctx);
@@ -941,7 +1030,7 @@ var GamePlayScene = function(game, stage)
         ctx.textAlign = "left";
       }
       ctx.font = s+"px Arial";
-      drawOutlinedText(ticker(my_graph.coin)+" "+my_graph.total_owned, x, my_graph.y+my_graph.h-10-s*3, 1, ctx);
+      drawOutlinedText(coin_ticker(my_graph.coin)+" "+my_graph.total_owned, x, my_graph.y+my_graph.h-10-s*3, 1, ctx);
       drawOutlinedText("(@ $"+fdisp(my_graph.total_spent_val/my_graph.total_owned)+")", x, my_graph.y+my_graph.h-10-s*2, 1, ctx);
       var delta = my_graph.total_owned_val-my_graph.total_spent_val;
       var p = delta/my_graph.total_spent_val;
@@ -1055,7 +1144,7 @@ var GamePlayScene = function(game, stage)
     //purchases
     ctx.strokeStyle = blue;
     ctx.lineWidth = 0.5;
-    var tick = ticker(my_graph.coin);
+    var tick = coin_ticker(my_graph.coin);
     if(purchases && purchases[tick] && show_purchases)
     {
       var closest_i = -1;
@@ -1167,9 +1256,9 @@ var GamePlayScene = function(game, stage)
 
     //buttons
     ctx.strokeStyle = black;
-    drawbtntitle(eth_btn,ticker(COIN_ETH),my_graph.coin == COIN_ETH);
-    drawbtntitle(btc_btn,ticker(COIN_BTC),my_graph.coin == COIN_BTC);
-    drawbtntitle(ltc_btn,ticker(COIN_LTC),my_graph.coin == COIN_LTC);
+    drawbtntitle(eth_btn,coin_ticker(COIN_ETH),my_graph.coin == COIN_ETH);
+    drawbtntitle(btc_btn,coin_ticker(COIN_BTC),my_graph.coin == COIN_BTC);
+    drawbtntitle(ltc_btn,coin_ticker(COIN_LTC),my_graph.coin == COIN_LTC);
     drawbtntitle(hr_btn,"hr",my_graph.span == HR);
     drawbtntitle(day_btn,"day",my_graph.span == DAY);
     drawbtntitle(week_btn,"week",my_graph.span == WEEK);
