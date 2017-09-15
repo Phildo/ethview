@@ -1405,6 +1405,14 @@ var variable_purchases_graph = function(purchases)
           self.cache.context.lineTo(xp,yp);
         }
         self.cache.context.stroke();
+
+        yp = mapVal(self.purchases_disp_min_yv, self.purchases_disp_max_yv, self.h, 0, 0);
+        self.cache.context.beginPath();
+        self.cache.context.moveTo(0,yp);
+        self.cache.context.lineTo(self.w,yp);
+        self.cache.context.stroke();
+
+        yp = mapVal(self.purchases_disp_min_yv, self.purchases_disp_max_yv, self.h, 0, yv);
       }
 
       self.dirty = false

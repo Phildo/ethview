@@ -404,6 +404,56 @@ var GamePlayScene = function(game, stage)
     }
   }
 
+  var getEnhanceDataBlock = function(start,end,graph,callback)
+  {
+    if(graph.src == SRC_KRAK)
+    {
+      //can't do it
+    }
+    else if(graph.src == SRC_GDAX)
+    {
+      var inc = (end-start)/200;
+      var priority = 1;
+
+      var from = coin_ticker(graph.coin);
+      var to = fiat_ticker(graph.fiat);
+      var wait = 1;
+      while(start < end)
+      {
+        var xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = (function a(xhr){return function()
+        {
+          if(xhr.readyState == 4)
+          {
+            if(xhr.status == 200)
+            {
+              var r = JSON.parse(xhr.responseText);
+
+              if(r && r.length)
+              {
+                var x = [];
+                var y = [];
+                for(var i = 0; i < r.length; i++)
+                {
+                  x[i] = floor(new Date(r[i][0]))*1000;
+                  y[i] = (parseFloat(r[i][1])+parseFloat(r[i][2]))/2;
+                }
+                graph.insertDataBlockNext(x,y,0,priority);
+                callback(graph);
+              }
+            }
+          }
+        }})(xhr);
+        if(start+inc*200 < end) xhr.url = "https://api.gdax.com/products/"+from+"-"+to+"/candles?start="+new Date(start).toISOString()+"&end="+new Date(start+inc*200).toISOString()+"&granularity="+(inc/1000);
+        else                    xhr.url = "https://api.gdax.com/products/"+from+"-"+to+"/candles?start="+new Date(start).toISOString()+"&end="+new Date(end).toISOString()+"&granularity="+(inc/1000);
+        xhr.open("GET",xhr.url,true);
+        req_q.push(xhr);
+        start += inc*200;
+        wait++;
+      }
+    }
+  }
+
   var getPressureDataBlock = function(page,graph,callback)
   {
     var from = coin_ticker(graph.coin);
@@ -808,10 +858,11 @@ var GamePlayScene = function(game, stage)
       enhancing = true;
       var from = floor(my_graph.disp_min_xv);
       var to   = floor(my_graph.disp_max_xv);
-      var n = 100;
-      for(var i = 0; i < n; i++)
-        getDataPt(floor(lerp(from,to,i/n)),my_graph,noop);
-      getDataPt(floor(to),my_graph,function(){enhancing = false;});
+      var graph;
+      for(var i = 0; i < SRC_COUNT; i++)
+        for(var j = 0; j < COIN_COUNT; j++)
+          if(graphs[i][j] == my_graph) graph = graphs[SRC_GDAX][j];
+      getEnhanceDataBlock(from,to,graph,function(){enhancing = false;});
     });
 
     var inert_callback = function(graph)
