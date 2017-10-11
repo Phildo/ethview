@@ -1103,7 +1103,7 @@ var GamePlayScene = function(game, stage)
     if(hover_xval)
     {
       drawOutlinedText("$"+fdisp(hover_yval), my_graph.x,my_graph.y-30, 1, ctx);
-      var date = new Date(floor(hover_xval)*1000);
+      var date = new Date(floor(hover_xval));
       drawOutlinedText(dateToString(date),my_graph.x,my_graph.y-15, 1, ctx);
       y = mapVal(my_graph.disp_min_yv, my_graph.disp_max_yv, my_graph.y+my_graph.h, my_graph.y, hover_yval);
       ctx.beginPath();
@@ -1285,7 +1285,7 @@ var GamePlayScene = function(game, stage)
         }
         ctx.fillStyle = black;
         ctx.strokeStyle = black;
-        drawOutlinedText(dateToString(new Date(purchases[tick][i].ts*1000)),x+xoff,y+75, 1, ctx);
+        drawOutlinedText(dateToString(new Date(purchases[tick][i].ts)),x+xoff,y+75, 1, ctx);
         ctx.beginPath();
         ctx.arc(x,y,arc_r,0,twopi);
         ctx.stroke();
