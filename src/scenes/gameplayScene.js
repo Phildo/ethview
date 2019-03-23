@@ -1345,7 +1345,11 @@ var taxes = function(yr)
   var eval = g.nextqueryx(edate,0);
   var samt = 0;
   var eamt = 0;
-  var spent = 0;
+  var delta = 0;
+  var n_bought = 0;
+  var val_bought = 0;
+  var n_sold   = 0;
+  var val_sold = 0;
 
   var ps = purchases.ETH;
   for(var i = 0; i < ps.length; i++)
@@ -1353,15 +1357,62 @@ var taxes = function(yr)
     p = ps[i];
     if(p.date < sdate) samt += p.amt;
     if(p.date < edate) eamt += p.amt;
-    if(p.date > sdate && p.date < edate) spent -= p.spent;
+    if(p.date > sdate && p.date < edate) delta -= p.spent;
   }
 
+  console.log("SELLS");
+  //sells
+  for(var i = 0; i < ps.length; i++)
+  {
+    p = ps[i];
+    if(
+      p.date > sdate && p.date < edate &&
+      p.spent < 0 && p.amt < 0
+    )
+    {
+      console.log(new Date(p.date),p.amt,p.rate,p.spent);
+      n_sold += p.amt;
+      val_sold += p.amt*p.rate;
+    }
+  }
+
+  console.log("BUYS");
+  //buys
+  for(var i = 0; i < ps.length; i++)
+  {
+    p = ps[i];
+    if(
+      p.date > sdate && p.date < edate &&
+      p.spent > 0 && p.amt > 0
+    )
+    {
+      console.log(new Date(p.date),p.amt,p.rate,p.spent);
+      if(n_bought + p.amt > -n_sold)
+      {
+        console.log("*"+(-n_sold-n_bought));
+        val_bought += (-n_sold-n_bought)*p.rate;
+        n_bought = n_sold;
+      }
+      else
+      {
+        n_bought += p.amt;
+        val_bought += p.amt*p.rate;
+      }
+    }
+  }
+
+  console.log(n_bought, n_sold);
+  console.log(val_bought,val_sold);
+  console.log(val_bought+val_sold);
+
+/*
   var scap = samt*sval;
   var ecap = eamt*eval;
   console.log("start: "+fdisp(samt)+"E @ ~$"+fdisp(sval)+" = "+fdisp(scap));
   console.log("end: "+fdisp(eamt)+"E @ ~$"+fdisp(eval)+" = "+fdisp(ecap));
   console.log("trade: $"+fdisp(spent));
   console.log("difference: ("+fdisp(ecap)+"-"+fdisp(scap)+")+"+fdisp(spent)+"= $"+fdisp((ecap-scap)+spent));
+*/
 
 }
 
