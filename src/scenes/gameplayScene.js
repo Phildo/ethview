@@ -1,8 +1,38 @@
+var ENUM = 0;
+
+var appname = "coinview";
+var HR = "HR";
+var DAY = "DAY";
+var WEEK = "WEEK";
+var MONTH = "MONTH";
+
+ENUM = 0;
+var COIN_ETH = ENUM; ENUM++;
+var COIN_BTC = ENUM; ENUM++;
+var COIN_LTC = ENUM; ENUM++;
+var COIN_COUNT = ENUM; ENUM++;
+
+ENUM = 0;
+var FIAT_USD = ENUM; ENUM++;
+var FIAT_BTC = ENUM; ENUM++;
+var FIAT_COUNT = ENUM; ENUM++;
+
+ENUM = 0;
+var BLOCK_MINUTE = ENUM; ENUM++;
+var BLOCK_HOUR   = ENUM; ENUM++;
+var BLOCK_DAY    = ENUM; ENUM++;
+var BLOCK_COUNT  = ENUM; ENUM++;
+
+ENUM = 0;
+var SRC_KRAK  = ENUM; ENUM++;
+var SRC_GDAX  = ENUM; ENUM++;
+var SRC_COUNT = ENUM; ENUM++;
+
+var graphs;
+
 var GamePlayScene = function(game, stage)
 {
   var self = this;
-
-  var ENUM = 0;
 
   var canv = stage.drawCanv;
   var canvas = canv.canvas;
@@ -33,35 +63,7 @@ var GamePlayScene = function(game, stage)
   var lr_grad;
   var rl_grad;
 
-  var appname = "coinview";
-  var HR = "HR";
-  var DAY = "DAY";
-  var WEEK = "WEEK";
-  var MONTH = "MONTH";
-
-  ENUM = 0;
-  var COIN_ETH = ENUM; ENUM++;
-  var COIN_BTC = ENUM; ENUM++;
-  var COIN_LTC = ENUM; ENUM++;
-  var COIN_COUNT = ENUM; ENUM++;
-
-  ENUM = 0;
-  var FIAT_USD = ENUM; ENUM++;
-  var FIAT_BTC = ENUM; ENUM++;
-  var FIAT_COUNT = ENUM; ENUM++;
-
-  ENUM = 0;
-  var BLOCK_MINUTE = ENUM; ENUM++;
-  var BLOCK_HOUR   = ENUM; ENUM++;
-  var BLOCK_DAY    = ENUM; ENUM++;
-  var BLOCK_COUNT  = ENUM; ENUM++;
-
-  ENUM = 0;
-  var SRC_KRAK  = ENUM; ENUM++;
-  var SRC_GDAX  = ENUM; ENUM++;
-  var SRC_COUNT = ENUM; ENUM++;
-
-  var graphs = [];
+  graphs = [];
   var eth_btc_graph;
   var my_graph;
   var graph_cover;
@@ -1332,4 +1334,34 @@ var GamePlayScene = function(game, stage)
   };
 
 };
+
+var taxes = function(yr)
+{
+  var sdate = new Date("01-01-"+yr);
+  var edate = new Date("12-31-"+yr);
+
+  var g = graphs[SRC_KRAK][COIN_ETH];
+  var sval = g.nextqueryx(sdate,0);
+  var eval = g.nextqueryx(edate,0);
+  var samt = 0;
+  var eamt = 0;
+  var spent = 0;
+
+  var ps = purchases.ETH;
+  for(var i = 0; i < ps.length; i++)
+  {
+    p = ps[i];
+    if(p.date < sdate) samt += p.amt;
+    if(p.date < edate) eamt += p.amt;
+    if(p.date > sdate && p.date < edate) spent -= p.spent;
+  }
+
+  var scap = samt*sval;
+  var ecap = eamt*eval;
+  console.log("start: "+fdisp(samt)+"E @ ~$"+fdisp(sval)+" = "+fdisp(scap));
+  console.log("end: "+fdisp(eamt)+"E @ ~$"+fdisp(eval)+" = "+fdisp(ecap));
+  console.log("trade: $"+fdisp(spent));
+  console.log("difference: ("+fdisp(ecap)+"-"+fdisp(scap)+")+"+fdisp(spent)+"= $"+fdisp((ecap-scap)+spent));
+
+}
 
