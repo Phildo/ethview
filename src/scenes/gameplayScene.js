@@ -9,7 +9,6 @@ var MONTH = "MONTH";
 ENUM = 0;
 var COIN_ETH = ENUM; ENUM++;
 var COIN_BTC = ENUM; ENUM++;
-var COIN_LTC = ENUM; ENUM++;
 var COIN_COUNT = ENUM; ENUM++;
 
 ENUM = 0;
@@ -70,7 +69,6 @@ var GamePlayScene = function(game, stage)
 
   var eth_btn;
   var btc_btn;
-  var ltc_btn;
   var hr_btn;
   var day_btn;
   var week_btn;
@@ -119,7 +117,6 @@ var GamePlayScene = function(game, stage)
     {
       case COIN_ETH: return "ETH"; break;
       case COIN_BTC: return "BTC"; break;
-      case COIN_LTC: return "LTC"; break;
     }
     return "ETH";
   }
@@ -561,26 +558,6 @@ var GamePlayScene = function(game, stage)
           }
         }
       }
-      if(purchases.LTC)
-      {
-        for(var i = 0; i < purchases.LTC.length; i++)
-        {
-          purchases.LTC[i].ts = new Date(purchases.LTC[i].date);
-          purchases.LTC[i].ts = floor(purchases.LTC[i].ts)+2*hr;
-          purchases.LTC[i].rate = purchases.LTC[i].spent/purchases.LTC[i].amt;
-        }
-        for(var i = 0; i < purchases.LTC.length-1; i++)
-        {
-          if(abs(purchases.LTC[i].ts-purchases.LTC[i+1].ts) < 10*min)
-          {
-            purchases.LTC[i].amt += purchases.LTC[i+1].amt;
-            purchases.LTC[i].spent += purchases.LTC[i+1].spent;
-            purchases.LTC[i].rate = purchases.LTC[i].spent/purchases.LTC[i].amt;
-            purchases.LTC.splice(i+1,1);
-            i--
-          }
-        }
-      }
     }
 
     keys = new function()
@@ -694,8 +671,6 @@ var GamePlayScene = function(game, stage)
     graphs[SRC_GDAX][COIN_ETH].color = "#004488";
     graphs[SRC_KRAK][COIN_BTC].color = "#FAB915";
     graphs[SRC_GDAX][COIN_BTC].color = "#F5A400";
-    graphs[SRC_KRAK][COIN_LTC].color = "#494949";
-    graphs[SRC_GDAX][COIN_LTC].color = "#5F5F5F";
 
     eth_btc_graph = new variable_graph();
     eth_btc_graph.src = SRC_KRAK;
@@ -791,8 +766,6 @@ var GamePlayScene = function(game, stage)
     eth_btn = new ButtonBox(x,y,w,h,function(){ my_graph = graphs[SRC_KRAK][COIN_ETH]; if(keys.alt) stretchGraph(); else normalizeGraph(); my_graph.dirty = true; });
     x += w+s;
     btc_btn = new ButtonBox(x,y,w,h,function(){ my_graph = graphs[SRC_KRAK][COIN_BTC]; if(keys.alt) stretchGraph(); else normalizeGraph(); my_graph.dirty = true; });
-    x += w+s;
-    ltc_btn = new ButtonBox(x,y,w,h,function(){ my_graph = graphs[SRC_KRAK][COIN_LTC]; if(keys.alt) stretchGraph(); else normalizeGraph(); my_graph.dirty = true; });
     x += w+s;
     show_btn = new ButtonBox(x,y,w,h,function(){ show_purchases = !show_purchases; });
     x += w+s*3;
@@ -917,7 +890,6 @@ var GamePlayScene = function(game, stage)
     dragger.flush();
     clicker.filter(eth_btn);
     clicker.filter(btc_btn);
-    clicker.filter(ltc_btn);
     clicker.filter(hr_btn);
     clicker.filter(day_btn);
     clicker.filter(week_btn);
@@ -1297,7 +1269,6 @@ var GamePlayScene = function(game, stage)
     ctx.strokeStyle = black;
     drawbtntitle(eth_btn,coin_ticker(COIN_ETH),my_graph.coin == COIN_ETH);
     drawbtntitle(btc_btn,coin_ticker(COIN_BTC),my_graph.coin == COIN_BTC);
-    drawbtntitle(ltc_btn,coin_ticker(COIN_LTC),my_graph.coin == COIN_LTC);
     drawbtntitle(hr_btn,"hr",my_graph.span == HR);
     drawbtntitle(day_btn,"day",my_graph.span == DAY);
     drawbtntitle(week_btn,"week",my_graph.span == WEEK);
