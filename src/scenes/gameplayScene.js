@@ -682,7 +682,7 @@ var GamePlayScene = function(game, stage)
     eth_btc_graph.wh = cam.wh-0.3;
     screenSpace(cam,canv,eth_btc_graph);
     eth_btc_graph.genCache();
-    eth_btc_graph.color = "#00FF00";
+    eth_btc_graph.color = "#AAFFAA";
 
     eth_pressure_graph = new running_deriv_variable_graph();
     eth_pressure_graph.src = SRC_GDAX;
