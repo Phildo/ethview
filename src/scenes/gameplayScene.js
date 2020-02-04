@@ -1,10 +1,10 @@
 var ENUM = 0;
 
 var appname = "coinview";
-var HR = "HR";
 var DAY = "DAY";
 var WEEK = "WEEK";
 var MONTH = "MONTH";
+var YEAR = "YEAR";
 
 ENUM = 0;
 var COIN_ETH = ENUM; ENUM++;
@@ -69,10 +69,10 @@ var GamePlayScene = function(game, stage)
 
   var eth_btn;
   var btc_btn;
-  var hr_btn;
   var day_btn;
   var week_btn;
   var month_btn;
+  var year_btn;
   var cmd_btn;
   var alt_btn;
   var show_btn;
@@ -191,16 +191,16 @@ var GamePlayScene = function(game, stage)
       target_disp_min_xv = my_graph.disp_min_xv;
       target_disp_max_xv = my_graph.disp_max_xv;
     }
-    if(my_graph.disp_min_xv > my_graph.disp_max_xv-hr)   { my_graph.disp_min_xv = my_graph.disp_max_xv-hr;   target_disp_min_xv = my_graph.disp_min_xv; }
-    if(my_graph.disp_min_xv < my_graph.disp_max_xv-year) { my_graph.disp_min_xv = my_graph.disp_max_xv-year; target_disp_min_xv = my_graph.disp_min_xv; }
+    if(my_graph.disp_min_xv > my_graph.disp_max_xv-hr)     { my_graph.disp_min_xv = my_graph.disp_max_xv-hr;     target_disp_min_xv = my_graph.disp_min_xv; }
+    if(my_graph.disp_min_xv < my_graph.disp_max_xv-2*year) { my_graph.disp_min_xv = my_graph.disp_max_xv-2*year; target_disp_min_xv = my_graph.disp_min_xv; }
 
     if(target_disp_max_xv > my_graph.xv[my_graph.xv.length-1])
     {
       target_disp_min_xv = my_graph.xv[my_graph.xv.length-1]-(my_graph.disp_max_xv-my_graph.disp_min_xv);
       target_disp_max_xv = my_graph.xv[my_graph.xv.length-1];
     }
-    if(target_disp_min_xv > target_disp_max_xv-hr)   target_disp_min_xv = target_disp_max_xv-hr;
-    if(target_disp_min_xv < target_disp_max_xv-year) target_disp_min_xv = target_disp_max_xv-year;
+    if(target_disp_min_xv > target_disp_max_xv-hr)     target_disp_min_xv = target_disp_max_xv-hr;
+    if(target_disp_min_xv < target_disp_max_xv-2*year) target_disp_min_xv = target_disp_max_xv-2*year;
 
     alignGraphs();
     my_graph.dirty = true;
@@ -771,13 +771,13 @@ var GamePlayScene = function(game, stage)
     x += w+s*3;
     x = my_graph.x+140;
     y = my_graph.y-(s+h);
-    hr_btn    = new ButtonBox(x,y,w,h,function(){ target_disp_min_xv = my_graph.disp_max_xv-hr; target_disp_ttl = target_disp_max_ttl; my_graph.span = HR; limitGraph(); });
-    x += w+s;
     day_btn   = new ButtonBox(x,y,w,h,function(){ target_disp_min_xv = my_graph.disp_max_xv-day; target_disp_ttl = target_disp_max_ttl; my_graph.span = DAY; limitGraph(); });
     x += w+s;
     week_btn  = new ButtonBox(x,y,w,h,function(){ target_disp_min_xv = my_graph.disp_max_xv-week; target_disp_ttl = target_disp_max_ttl; my_graph.span = WEEK; limitGraph(); });
     x += w+s;
     month_btn = new ButtonBox(x,y,w,h,function(){ target_disp_min_xv = my_graph.disp_max_xv-month; target_disp_ttl = target_disp_max_ttl; my_graph.span = MONTH; limitGraph(); });
+    x += w+s;
+    year_btn  = new ButtonBox(x,y,w,h,function(){ target_disp_min_xv = my_graph.disp_max_xv-year; target_disp_ttl = target_disp_max_ttl; my_graph.span = YEAR; limitGraph(); });
     x += w+s*3;
     x = my_graph.x;
     y = my_graph.y-(s+h)*2;
@@ -890,10 +890,10 @@ var GamePlayScene = function(game, stage)
     dragger.flush();
     clicker.filter(eth_btn);
     clicker.filter(btc_btn);
-    clicker.filter(hr_btn);
     clicker.filter(day_btn);
     clicker.filter(week_btn);
     clicker.filter(month_btn);
+    clicker.filter(year_btn);
     clicker.filter(cmd_btn);
     clicker.filter(alt_btn);
     clicker.filter(show_btn);
@@ -1115,6 +1115,11 @@ var GamePlayScene = function(game, stage)
     ctx.fillText("month", x+5, my_graph.y-2);
     ctx.moveTo(x,my_graph.y);
     ctx.lineTo(x,my_graph.y+my_graph.h);
+      //year
+    x = mapVal(my_graph.disp_min_xv,my_graph.disp_max_xv,my_graph.x,my_graph.x+my_graph.w,my_graph.disp_max_xv-year)
+    ctx.fillText("year", x+5, my_graph.y-2);
+    ctx.moveTo(x,my_graph.y);
+    ctx.lineTo(x,my_graph.y+my_graph.h);
     ctx.stroke();
 
     //amt (y) delim
@@ -1269,10 +1274,10 @@ var GamePlayScene = function(game, stage)
     ctx.strokeStyle = black;
     drawbtntitle(eth_btn,coin_ticker(COIN_ETH),my_graph.coin == COIN_ETH);
     drawbtntitle(btc_btn,coin_ticker(COIN_BTC),my_graph.coin == COIN_BTC);
-    drawbtntitle(hr_btn,"hr",my_graph.span == HR);
     drawbtntitle(day_btn,"day",my_graph.span == DAY);
     drawbtntitle(week_btn,"week",my_graph.span == WEEK);
     drawbtntitle(month_btn,"month",my_graph.span == MONTH);
+    drawbtntitle(year_btn,"year",my_graph.span == YEAR);
     //drawbtntitle(cmd_btn,"cmd",keys.cmd);
     drawbtntitle(alt_btn,"alt",keys.alt);
     //drawbtntitle(show_btn,"show",show_purchases);
@@ -1331,6 +1336,7 @@ var taxes = function(yr)
     if(p.date > sdate && p.date < edate) delta -= p.spent;
   }
 
+  console.log("Date","Amount (ETH)","Rate ($/ETH)","Value ($)");
   console.log("SELLS");
   //sells
   for(var i = 0; i < ps.length; i++)
@@ -1375,15 +1381,6 @@ var taxes = function(yr)
   console.log(n_bought, n_sold);
   console.log(val_bought,val_sold);
   console.log(val_bought+val_sold);
-
-/*
-  var scap = samt*sval;
-  var ecap = eamt*eval;
-  console.log("start: "+fdisp(samt)+"E @ ~$"+fdisp(sval)+" = "+fdisp(scap));
-  console.log("end: "+fdisp(eamt)+"E @ ~$"+fdisp(eval)+" = "+fdisp(ecap));
-  console.log("trade: $"+fdisp(spent));
-  console.log("difference: ("+fdisp(ecap)+"-"+fdisp(scap)+")+"+fdisp(spent)+"= $"+fdisp((ecap-scap)+spent));
-*/
 
 }
 
