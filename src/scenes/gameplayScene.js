@@ -1,5 +1,7 @@
 var ENUM = 0;
 
+var purchases = false;
+
 var appname = "coinview";
 var DAY = "DAY";
 var WEEK = "WEEK";

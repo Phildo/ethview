@@ -1325,6 +1325,7 @@ var variable_purchases_graph = function(purchases)
 
   self.calcPurchases = function()
   {
+    if(!self.purchases) return;
     var fiat = 0;
     var coin = 0;
     var p_i = 0;
